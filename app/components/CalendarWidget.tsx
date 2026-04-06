@@ -18,7 +18,12 @@ export default function CalendarWidget() {
         .then((res) => res.json())
         .then((data) => {
           if (data.events) {
-            setEvents(data.events);
+            const sortedEvents = [...data.events].sort((a, b) => {
+              const dateA = new Date(a.start.dateTime || a.start.date).getTime();
+              const dateB = new Date(b.start.dateTime || b.start.date).getTime();
+              return dateA - dateB;
+            });
+            setEvents(sortedEvents.slice(0, 4));
           }
           setLoading(false);
         })
