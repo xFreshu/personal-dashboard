@@ -1,5 +1,6 @@
 import ClockWidget from "./components/ClockWidget";
 import WeatherWidget from "./components/WeatherWidget";
+import CalendarWidget from "./components/CalendarWidget";
 
 export default function Home() {
   return (
@@ -26,13 +27,7 @@ export default function Home() {
              <WeatherWidget />
           </div>
           
-          {/* Placeholder for Calendar */}
-          <div className="col-span-1 md:col-span-2 lg:col-span-4 min-h-[16rem] bg-card/40 rounded-3xl border border-dashed border-zinc-800 p-8 flex flex-col items-center justify-center text-center shadow-sm">
-            <h3 className="text-zinc-300 font-medium text-lg mb-2">Kalendarz Zespołu</h3>
-            <p className="text-zinc-500 text-sm max-w-sm">
-              Integracja z Google Calendar pojawi się wkrótce. Będziesz mógł tutaj przeglądać nadchodzące spotkania i wydarzenia w Żorach.
-            </p>
-          </div>
+          <CalendarWidget />
         </div>
         
       </div>
