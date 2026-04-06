@@ -3,7 +3,7 @@
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { Calendar, LogIn, LogOut, Clock } from "lucide-react";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isToday, isSameDay } from "date-fns";
 import { pl } from "date-fns/locale";
 
 export default function CalendarWidget() {
@@ -60,6 +60,13 @@ export default function CalendarWidget() {
     );
   }
 
+  // Obliczenia dla mini-kalendarza
+  const today = new Date();
+  const firstDay = startOfWeek(startOfMonth(today), { weekStartsOn: 1 });
+  const lastDay = endOfWeek(endOfMonth(today), { weekStartsOn: 1 });
+  const calendarDays = eachDayOfInterval({ start: firstDay, end: lastDay });
+  const weekDays = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'];
+
   return (
     <div className="col-span-1 md:col-span-2 lg:col-span-4 bg-card/40 backdrop-blur-md border border-white/5 rounded-3xl p-6 lg:p-8 shadow-lg flex flex-col gap-6 relative overflow-hidden group">
       
@@ -72,7 +79,7 @@ export default function CalendarWidget() {
             <Calendar size={24} />
           </div>
           <div>
-            <h3 className="text-zinc-100 font-semibold text-lg">Nadchodzące Wydarzenia</h3>
+            <h3 className="text-zinc-100 font-semibold text-lg">Twój Kalendarz</h3>
             <p className="text-zinc-400 text-sm">{session?.user?.email}</p>
           </div>
         </div>
@@ -86,41 +93,82 @@ export default function CalendarWidget() {
         </button>
       </div>
 
-      <div className="z-10 mt-2">
-        {loading ? (
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-             {[1, 2, 3].map(i => (
-               <div key={i} className="h-28 bg-white/5 animate-pulse rounded-2xl w-full"></div>
-             ))}
-           </div>
-        ) : events.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-zinc-400">Brak nadchodzących wydarzeń! 🎉</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {events.map((event) => {
-              const startDate = event.start.dateTime ? new Date(event.start.dateTime) : new Date(event.start.date);
-              const fmtDate = format(startDate, "d MMMM", { locale: pl });
-              const fmtTime = event.start.dateTime ? format(startDate, "HH:mm") : "Cały dzień";
-
+      <div className="z-10 mt-2 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* Lewa kolumna: Mini Kalendarz */}
+        <div className="lg:col-span-1 bg-white/[0.02] border border-white/5 rounded-2xl p-5 flex flex-col items-center shadow-inner">
+          <h4 className="text-zinc-100 font-medium mb-4 capitalize">{format(today, 'MMMM yyyy', { locale: pl })}</h4>
+          <div className="grid grid-cols-7 gap-1 w-full text-center">
+            {weekDays.map(day => (
+              <div key={day} className="text-xs text-zinc-500 font-medium pb-2">{day}</div>
+            ))}
+            {calendarDays.map((date, i) => {
+              const isCurrentMonth = isSameMonth(date, today);
+              const isTodayDate = isToday(date);
+              
+              // Sprawdzamy czy w tym dniu są jakieś wydarzenia (wizualne podświetlenie)
+              const hasEvents = events.some(ev => {
+                  const evDate = ev.start.dateTime ? new Date(ev.start.dateTime) : new Date(ev.start.date);
+                  return isSameDay(date, evDate);
+              });
+              
               return (
-                <div key={event.id} className="bg-white/5 border border-white/5 hover:border-white/10 hover:bg-white/[0.07] transition-all rounded-2xl p-5 flex flex-col justify-between min-h-[7rem]">
-                  <h4 className="text-zinc-100 font-medium line-clamp-2 mb-3" title={event.summary}>
-                    {event.summary || "(Brak tytułu)"}
-                  </h4>
-                  <div className="flex items-center justify-between mt-auto">
-                    <div className="flex items-center gap-1.5 text-blue-400 text-sm bg-blue-500/10 px-3 py-1 rounded-full w-fit">
-                      <Clock size={14} />
-                      <span>{fmtTime}</span>
-                    </div>
-                    <span className="text-zinc-500 text-xs text-right capitalize">{fmtDate}</span>
-                  </div>
+                <div 
+                  key={i} 
+                  className={`
+                    w-8 h-8 mx-auto flex items-center justify-center rounded-full text-sm transition-all
+                    ${!isCurrentMonth ? 'text-zinc-700' : 'text-zinc-300'}
+                    ${isTodayDate ? 'bg-blue-500 text-white font-bold shadow-md shadow-blue-500/20' : ''}
+                    ${!isTodayDate && hasEvents ? 'border border-blue-500/30' : ''}
+                    ${!isTodayDate && hasEvents && isCurrentMonth ? 'bg-blue-500/10' : ''}
+                    ${!isTodayDate && !hasEvents && isCurrentMonth ? 'hover:bg-white/5' : ''}
+                  `}
+                >
+                  {format(date, 'd')}
                 </div>
               );
             })}
           </div>
-        )}
+        </div>
+
+        {/* Prawa kolumna: Wydarzenia */}
+        <div className="lg:col-span-2">
+          {loading ? (
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+               {[1, 2, 3, 4].map(i => (
+                 <div key={i} className="h-28 bg-white/5 animate-pulse rounded-2xl w-full"></div>
+               ))}
+             </div>
+          ) : events.length === 0 ? (
+            <div className="text-center py-12 bg-white/[0.02] border border-white/5 rounded-2xl">
+              <p className="text-zinc-400">Brak nadchodzących wydarzeń! 🎉</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {events.map((event) => {
+                const startDate = event.start.dateTime ? new Date(event.start.dateTime) : new Date(event.start.date);
+                const fmtDate = format(startDate, "d MMM", { locale: pl });
+                const fmtTime = event.start.dateTime ? format(startDate, "HH:mm") : "Cały";
+
+                return (
+                  <div key={event.id} className="bg-white/5 border border-white/5 hover:border-white/10 hover:bg-white/[0.07] transition-all rounded-2xl p-5 flex flex-col justify-between min-h-[7rem]">
+                    <h4 className="text-zinc-100 font-medium line-clamp-2 mb-3" title={event.summary}>
+                      {event.summary || "(Brak tytułu)"}
+                    </h4>
+                    <div className="flex items-center justify-between mt-auto">
+                      <div className="flex items-center gap-1.5 text-blue-400 text-sm bg-blue-500/10 px-3 py-1 rounded-full w-fit">
+                        <Clock size={14} />
+                        <span>{fmtTime}</span>
+                      </div>
+                      <span className="text-zinc-500 text-xs text-right capitalize">{fmtDate}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   );
