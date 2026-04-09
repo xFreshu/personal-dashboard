@@ -1,0 +1,23 @@
+name: Deploy Next.js to Raspberry Pi
+
+on:
+  push:
+    branches:
+      - main  # Reaguj tylko na push do gałęzi main
+
+jobs:
+  deploy:
+    runs-on: self-hosted  # To mówi GitHubowi: "użyj mojej Malinki"
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build application
+        run: npm run build
+
+      - name: Restart PM2
+        run: pm2 restart personal-dashboard || pm2 start npm --name "personal-dashboard" -- start
