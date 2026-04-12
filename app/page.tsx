@@ -1,11 +1,12 @@
 import ClockWidget from "./components/ClockWidget";
 import WeatherWidget from "./components/WeatherWidget";
 import CalendarWidget from "./components/CalendarWidget";
+import HabitWidget from "./components/HabitWidget";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-background p-6 md:p-12 lg:p-20">
-      <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out">
+    <main className="min-h-screen bg-background p-6 md:p-8 lg:p-10">
+      <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out">
         {/* Header / Welcome Section */}
         <header className="space-y-3">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
@@ -27,6 +28,7 @@ export default function Home() {
           </div>
 
           <CalendarWidget />
+          <HabitWidget />
         </div>
       </div>
     </main>

@@ -1,0 +1,18 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Habit {
+  id        Int      @id @default(autoincrement())
+  habit     String
+  date      DateTime @db.Date
+  completed Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@unique([habit, date])
+  @@map("habits")
+}

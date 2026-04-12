@@ -42,3 +42,5 @@ next-env.d.ts
 
 AGENTS.md
 .idea
+certificates
+/app/generated/prisma
