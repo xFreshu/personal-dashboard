@@ -70,12 +70,12 @@ export default function WeatherWidget() {
   }, []);
 
   if (loading) {
-    return <div className="h-full min-h-[16rem] bg-card rounded-3xl border border-border animate-pulse p-8"></div>;
+    return <div className="h-full min-h-[8rem] bg-card rounded-3xl border border-border animate-pulse p-4"></div>;
   }
 
   if (error || !weather) {
     return (
-      <div className="h-full min-h-[16rem] bg-card rounded-3xl border border-border p-8 flex items-center justify-center text-zinc-500 shadow-sm">
+      <div className="h-full min-h-[8rem] bg-card rounded-3xl border border-border p-4 flex items-center justify-center text-zinc-500 shadow-sm">
         <p>{error || "Brak danych"}</p>
       </div>
     );
@@ -84,18 +84,18 @@ export default function WeatherWidget() {
   const IconComponent = weather.icon === "sun" ? Sun : weather.icon === "rain" ? CloudRain : Cloud;
 
   return (
-    <div className="h-full min-h-[16rem] bg-card rounded-3xl border border-border p-8 flex flex-col justify-between shadow-sm relative overflow-hidden group hover:border-zinc-700 transition-all duration-300">
-       <div className="absolute -top-4 -right-4 p-8 opacity-5 group-hover:opacity-10 group-hover:scale-110 transition-all duration-500">
-        <IconComponent size={120} className="text-zinc-100" strokeWidth={1} />
+    <div className="h-full min-h-[8rem] bg-card rounded-3xl border border-border p-4 flex flex-col justify-between shadow-sm relative overflow-hidden group hover:border-zinc-700 transition-all duration-300">
+       <div className="absolute -top-2 -right-2 p-4 opacity-5 group-hover:opacity-10 group-hover:scale-110 transition-all duration-500">
+        <IconComponent size={60} className="text-zinc-100" strokeWidth={1} />
       </div>
       
       <div className="flex flex-col z-10 w-full h-full justify-between">
          <div className="flex items-start justify-between mb-4">
            <div>
-             <h2 className="text-5xl md:text-6xl font-bold tracking-tighter text-zinc-100 drop-shadow-sm flex items-start">
-               {Math.round(weather.temp)}<span className="text-2xl mt-1 md:mt-2 text-zinc-400 font-medium ml-1">°C</span>
+             <h2 className="text-2xl md:text-3xl font-bold tracking-tighter text-zinc-100 drop-shadow-sm flex items-start">
+               {Math.round(weather.temp)}<span className="text-base mt-0.5 md:mt-1 text-zinc-400 font-medium ml-1">°C</span>
              </h2>
-             <div className="flex items-center gap-3 mt-2 text-sm font-medium">
+             <div className="flex items-center gap-2 mt-1 text-xs font-medium">
                 <div className="flex items-center gap-0.5 text-rose-400" title="Dzisiejsze maksimum">
                    <ArrowUp size={16} />
                    <span>{Math.round(weather.tempMax)}°</span>
@@ -108,16 +108,16 @@ export default function WeatherWidget() {
            </div>
            
            <div className="text-right">
-             <div className="flex items-center gap-1.5 text-zinc-300 justify-end font-medium">
-               <MapPin size={16} className="text-rose-500" />
-               <p className="text-base">Żory, PL</p>
+             <div className="flex items-center gap-1 text-zinc-300 justify-end font-medium">
+               <MapPin size={14} className="text-rose-500" />
+               <p className="text-sm">Żory, PL</p>
              </div>
-             <p className="text-sm text-zinc-500 mt-1">{weather.description}</p>
+             <p className="text-xs text-zinc-500 mt-0.5">{weather.description}</p>
            </div>
          </div>
 
          {/* Hourly Graph Line */}
-         <div className="w-full h-16 mt-2 mb-4 pr-4">
+         <div className="w-full h-8 mt-1 mb-2 pr-2">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={weather.hourly}>
                 <defs>
@@ -147,13 +147,13 @@ export default function WeatherWidget() {
             </ResponsiveContainer>
          </div>
          
-         <div className="flex items-center gap-6 pt-4 border-t border-zinc-800/50">
-           <div className="flex items-center gap-2 text-zinc-400">
-             <Droplets size={18} className="text-blue-400" />
+         <div className="flex items-center gap-4 pt-2 border-t border-zinc-800/50 text-xs">
+           <div className="flex items-center gap-1.5 text-zinc-400">
+             <Droplets size={14} className="text-blue-400" />
              <span className="font-medium">{weather.humidity}% wilg.</span>
            </div>
-           <div className="flex items-center gap-2 text-zinc-400">
-             <Wind size={18} className="text-zinc-300" />
+           <div className="flex items-center gap-1.5 text-zinc-400">
+             <Wind size={14} className="text-zinc-300" />
              <span className="font-medium">{Math.round(weather.windSpeed)} km/h</span>
            </div>
          </div>
