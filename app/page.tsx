@@ -2,6 +2,7 @@ import ClockWidget from "./components/ClockWidget";
 import WeatherWidget from "./components/WeatherWidget";
 import CalendarWidget from "./components/CalendarWidget";
 import HabitWidget from "./components/HabitWidget";
+import LolRankWidget from "./components/LolRankWidget";
 
 export default function Home() {
   return (
@@ -14,6 +15,9 @@ export default function Home() {
           </div>
           <div className="col-span-1 md:col-span-1 lg:col-span-1">
             <WeatherWidget />
+          </div>
+          <div className="col-span-1 md:col-span-2 lg:col-span-2">
+            <LolRankWidget />
           </div>
 
           <CalendarWidget />
