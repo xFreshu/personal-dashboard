@@ -15,6 +15,11 @@ describe("LearningRoadmapBoard", () => {
 
     expect(screen.getByRole("heading", { name: "Centrum Nauki" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /JavaScript Developer/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Skad czerpac wiedze" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Core JavaScript od podstaw/i })).toHaveAttribute(
+      "href",
+      "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Scripting",
+    );
     expect(screen.getByRole("heading", { name: "Cloud and Hosting Basics" })).toBeInTheDocument();
     expect(
       screen.getByRole("button", {

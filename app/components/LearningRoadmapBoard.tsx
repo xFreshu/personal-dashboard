@@ -1,15 +1,62 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowUpRight, Check, GraduationCap } from "lucide-react";
+import {
+  ArrowUpRight,
+  BookOpen,
+  Check,
+  Compass,
+  FileText,
+  FlaskConical,
+  GraduationCap,
+  Map,
+  Network,
+  type LucideIcon,
+} from "lucide-react";
 import {
   learningTracks,
+  type LearningResourceKind,
   type LearningTrack,
 } from "./learningRoadmaps";
 
 const STORAGE_KEY = "learning-roadmap-progress-v1";
 
 type ProgressState = Record<string, boolean>;
+
+const resourceKindMeta: Record<
+  LearningResourceKind,
+  {
+    label: string;
+    icon: LucideIcon;
+    className: string;
+  }
+> = {
+  roadmap: {
+    label: "Mapa",
+    icon: Map,
+    className: "border-indigo-400/20 bg-indigo-400/10 text-indigo-200",
+  },
+  docs: {
+    label: "Docs",
+    icon: BookOpen,
+    className: "border-cyan-400/20 bg-cyan-400/10 text-cyan-200",
+  },
+  lab: {
+    label: "Lab",
+    icon: FlaskConical,
+    className: "border-emerald-400/20 bg-emerald-400/10 text-emerald-200",
+  },
+  reference: {
+    label: "Reference",
+    icon: FileText,
+    className: "border-amber-400/20 bg-amber-400/10 text-amber-200",
+  },
+  architecture: {
+    label: "Architektura",
+    icon: Network,
+    className: "border-fuchsia-400/20 bg-fuchsia-400/10 text-fuchsia-200",
+  },
+};
 
 function itemKey(trackId: string, milestoneId: string, topicId: string) {
   return `${trackId}:${milestoneId}:${topicId}`;
@@ -196,6 +243,58 @@ export default function LearningRoadmapBoard() {
           </div>
 
           <div className="mt-8 grid grid-cols-1 gap-5 xl:grid-cols-2">
+            <section className="rounded-3xl border border-white/5 bg-white/[0.03] p-5 transition-colors hover:border-white/10 xl:col-span-2">
+              <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                <div>
+                  <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/5 px-2.5 py-1 text-[11px] font-medium text-zinc-400">
+                    <Compass className="size-3.5" />
+                    Radar wiedzy
+                  </div>
+                  <h3 className="text-xl font-semibold text-zinc-100">Skad czerpac wiedze</h3>
+                  <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-500">
+                    Kuratorowany miks: najpierw mapa, potem oficjalne docs, praktyczne laby i referencje do sprawdzania
+                    konkretow.
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-white/5 bg-white/[0.04] px-3 py-2 text-sm text-zinc-300">
+                  {activeTrack.resources.length} zrodel
+                </div>
+              </div>
+
+              <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+                {activeTrack.resources.map((resource) => {
+                  const meta = resourceKindMeta[resource.kind];
+                  const ResourceIcon = meta.icon;
+
+                  return (
+                    <a
+                      key={resource.id}
+                      href={resource.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="group flex min-h-48 flex-col rounded-2xl border border-white/5 bg-zinc-950/30 p-4 transition-all hover:-translate-y-0.5 hover:border-white/10 hover:bg-white/[0.04]"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${meta.className}`}
+                        >
+                          <ResourceIcon className="size-3.5" />
+                          {meta.label}
+                        </span>
+                        <ArrowUpRight className="size-4 text-zinc-600 transition-colors group-hover:text-zinc-200" />
+                      </div>
+
+                      <div className="mt-4 flex flex-1 flex-col">
+                        <h4 className="text-sm font-semibold leading-5 text-zinc-100">{resource.title}</h4>
+                        <p className="mt-2 flex-1 text-sm leading-6 text-zinc-500">{resource.description}</p>
+                        <div className="mt-4 text-xs font-medium text-zinc-400">{resource.source}</div>
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+            </section>
+
             {activeTrack.milestones.map((milestone, index) => {
               const milestoneProgress = getMilestoneProgress(activeTrack, milestone.id, progress);
 

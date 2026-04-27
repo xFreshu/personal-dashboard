@@ -10,6 +10,17 @@ export type LearningTopic = {
   label: string;
 };
 
+export type LearningResourceKind = "roadmap" | "docs" | "lab" | "reference" | "architecture";
+
+export type LearningResource = {
+  id: string;
+  title: string;
+  description: string;
+  href: string;
+  source: string;
+  kind: LearningResourceKind;
+};
+
 export type LearningMilestone = {
   id: string;
   title: string;
@@ -27,6 +38,7 @@ export type LearningTrack = {
   border: string;
   sourceUrl: string;
   sourceLabel: string;
+  resources: LearningResource[];
   milestones: LearningMilestone[];
 };
 
@@ -42,6 +54,48 @@ export const learningTracks: LearningTrack[] = [
     border: "border-amber-500/20",
     sourceUrl: "https://roadmap.sh/javascript",
     sourceLabel: "roadmap.sh/javascript",
+    resources: [
+      {
+        id: "js-roadmap",
+        title: "Mapa calej sciezki",
+        description: "Szybki przeglad tematow i luk, zanim wejdziesz w szczegoly.",
+        href: "https://roadmap.sh/javascript",
+        source: "roadmap.sh",
+        kind: "roadmap",
+      },
+      {
+        id: "mdn-js",
+        title: "Core JavaScript od podstaw",
+        description: "Najlepszy punkt startowy do skladni, DOM, eventow i pracy z przegladarka.",
+        href: "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Scripting",
+        source: "MDN",
+        kind: "docs",
+      },
+      {
+        id: "web-dev",
+        title: "Web platform labs",
+        description: "Krotkie kursy o HTML, CSS, JS, performance, accessibility i testowaniu.",
+        href: "https://web.dev/learn",
+        source: "web.dev",
+        kind: "lab",
+      },
+      {
+        id: "react-learn",
+        title: "React mindset",
+        description: "Oficjalny tor nauki komponentow, stanu i myslenia interfejsem.",
+        href: "https://react.dev/learn",
+        source: "React",
+        kind: "docs",
+      },
+      {
+        id: "node-learn",
+        title: "Runtime i backend JS",
+        description: "Node.js, npm, async, HTTP i diagnostyka od strony oficjalnych materialow.",
+        href: "https://nodejs.org/learn",
+        source: "Node.js",
+        kind: "reference",
+      },
+    ],
     milestones: [
       {
         id: "js-core",
@@ -144,6 +198,48 @@ export const learningTracks: LearningTrack[] = [
     border: "border-sky-500/20",
     sourceUrl: "https://roadmap.sh/java",
     sourceLabel: "roadmap.sh/java",
+    resources: [
+      {
+        id: "java-roadmap",
+        title: "Mapa calej sciezki",
+        description: "Widok od podstaw jezyka po backend, bazy danych i praktyki engineeringowe.",
+        href: "https://roadmap.sh/java",
+        source: "roadmap.sh",
+        kind: "roadmap",
+      },
+      {
+        id: "dev-java",
+        title: "Java language track",
+        description: "Oficjalne lekcje o skladni, OOP, kolekcjach, strumieniach i nowoczesnej Javie.",
+        href: "https://dev.java/learn/",
+        source: "Dev.java",
+        kind: "docs",
+      },
+      {
+        id: "oracle-java-docs",
+        title: "Java SE reference",
+        description: "Dokumentacja JDK, API i wersji Javy, gdy chcesz sprawdzic zrodlo prawdy.",
+        href: "https://docs.oracle.com/en/java/javase/",
+        source: "Oracle",
+        kind: "reference",
+      },
+      {
+        id: "spring-guides",
+        title: "Spring hands-on guides",
+        description: "Male, praktyczne projekty do REST API, danych, security i deploymentu.",
+        href: "https://spring.io/guides/",
+        source: "Spring",
+        kind: "lab",
+      },
+      {
+        id: "spring-boot-docs",
+        title: "Spring Boot production docs",
+        description: "Konfiguracja, starters, testing, observability i produkcyjny backend.",
+        href: "https://docs.spring.io/spring-boot/",
+        source: "Spring Docs",
+        kind: "architecture",
+      },
+    ],
     milestones: [
       {
         id: "java-basics",
@@ -246,6 +342,48 @@ export const learningTracks: LearningTrack[] = [
     border: "border-emerald-500/20",
     sourceUrl: "https://roadmap.sh/devops-beginner",
     sourceLabel: "roadmap.sh/devops-beginner",
+    resources: [
+      {
+        id: "devops-roadmap",
+        title: "Mapa calej sciezki",
+        description: "Kolejnosc tematow od Linuxa i sieci po CI/CD, kontenery i cloud.",
+        href: "https://roadmap.sh/devops-beginner",
+        source: "roadmap.sh",
+        kind: "roadmap",
+      },
+      {
+        id: "docker-get-started",
+        title: "Docker od zera",
+        description: "Oficjalne cwiczenia z obrazami, kontenerami, Compose i lokalnym runtime.",
+        href: "https://docs.docker.com/get-started/",
+        source: "Docker Docs",
+        kind: "lab",
+      },
+      {
+        id: "kubernetes-basics",
+        title: "Kubernetes basics",
+        description: "Interaktywny tor o pods, deployments, services i skalowaniu aplikacji.",
+        href: "https://kubernetes.io/docs/tutorials/kubernetes-basics/",
+        source: "Kubernetes",
+        kind: "lab",
+      },
+      {
+        id: "terraform-docs",
+        title: "Infrastructure as Code",
+        description: "Terraform language, providers, state i workflow provisioningowy.",
+        href: "https://developer.hashicorp.com/terraform/docs",
+        source: "HashiCorp",
+        kind: "docs",
+      },
+      {
+        id: "aws-well-architected",
+        title: "Cloud architecture lens",
+        description: "Decyzje o reliability, security, cost, performance i operations w cloudzie.",
+        href: "https://docs.aws.amazon.com/wellarchitected/latest/framework/welcome.html",
+        source: "AWS",
+        kind: "architecture",
+      },
+    ],
     milestones: [
       {
         id: "linux-networking",
@@ -326,6 +464,48 @@ export const learningTracks: LearningTrack[] = [
     border: "border-violet-500/20",
     sourceUrl: "https://roadmap.sh/linux",
     sourceLabel: "roadmap.sh/linux",
+    resources: [
+      {
+        id: "linux-roadmap",
+        title: "Mapa calej sciezki",
+        description: "Porzadkuje terminal, procesy, siec, storage i administracje systemem.",
+        href: "https://roadmap.sh/linux",
+        source: "roadmap.sh",
+        kind: "roadmap",
+      },
+      {
+        id: "linux-man-pages",
+        title: "Man pages jako kompas",
+        description: "Referencja komend, syscalls, bibliotek i konfiguracji w stylu source of truth.",
+        href: "https://man7.org/linux/man-pages/",
+        source: "man7.org",
+        kind: "reference",
+      },
+      {
+        id: "bash-manual",
+        title: "Bash bez magii",
+        description: "Oficjalny manual do shell'a, expansions, pipes, redirection i skryptow.",
+        href: "https://www.gnu.org/software/bash/manual/bash.html",
+        source: "GNU",
+        kind: "docs",
+      },
+      {
+        id: "openssh-manual",
+        title: "SSH i bezpieczny dostep",
+        description: "Manuale OpenSSH do kluczy, konfiguracji klienta, serwera i tunelowania.",
+        href: "https://www.openssh.org/manual.html",
+        source: "OpenSSH",
+        kind: "reference",
+      },
+      {
+        id: "kernel-docs",
+        title: "Linux pod maska",
+        description: "Dokumentacja kernela, userspace API, administracja i narzedzia systemowe.",
+        href: "https://docs.kernel.org/",
+        source: "Kernel Docs",
+        kind: "architecture",
+      },
+    ],
     milestones: [
       {
         id: "command-line",
