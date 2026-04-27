@@ -2,36 +2,75 @@
 
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useEffect, useState } from "react";
+import type { Session } from "next-auth";
 import { Calendar, LogIn, LogOut, Clock } from "lucide-react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isToday, isSameDay } from "date-fns";
 import { pl } from "date-fns/locale";
 
+type CalendarEvent = {
+  id: string;
+  summary?: string | null;
+  start: {
+    date?: string | null;
+    dateTime?: string | null;
+  };
+};
+
+type CalendarResponse = {
+  events?: CalendarEvent[];
+};
+
+type SessionWithAccessToken = Session & {
+  accessToken?: string;
+  error?: string;
+};
+
+function getEventStartDate(event: CalendarEvent) {
+  const startValue = event.start.dateTime ?? event.start.date;
+  return startValue ? new Date(startValue) : null;
+}
+
 export default function CalendarWidget() {
   const { data: session, status } = useSession();
-  const [events, setEvents] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const typedSession = session as SessionWithAccessToken | null;
+  const [events, setEvents] = useState<CalendarEvent[] | null>(null);
+  const loading = status === "authenticated" && events === null;
 
   useEffect(() => {
-    if (status === "authenticated") {
-      setLoading(true);
-      fetch("/api/calendar")
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.events) {
-            const sortedEvents = [...data.events].sort((a, b) => {
-              const dateA = new Date(a.start.dateTime || a.start.date).getTime();
-              const dateB = new Date(b.start.dateTime || b.start.date).getTime();
-              return dateA - dateB;
-            });
-            setEvents(sortedEvents.slice(0, 4));
-          }
-          setLoading(false);
-        })
-        .catch((err) => {
-          console.error(err);
-          setLoading(false);
-        });
+    if (status !== "authenticated") {
+      return;
     }
+
+    let cancelled = false;
+
+    const fetchEvents = async () => {
+      try {
+        const res = await fetch("/api/calendar");
+        const data = (await res.json()) as CalendarResponse;
+        const nextEvents = data.events ?? [];
+        const sortedEvents = [...nextEvents].sort((a, b) => {
+          const dateA = getEventStartDate(a)?.getTime() ?? 0;
+          const dateB = getEventStartDate(b)?.getTime() ?? 0;
+          return dateA - dateB;
+        });
+
+        if (!cancelled) {
+          setEvents(sortedEvents.slice(0, 4));
+        }
+      } catch (error) {
+        console.error(error);
+
+        if (!cancelled) {
+          setEvents([]);
+        }
+      }
+    };
+
+    fetchEvents();
+
+    return () => {
+      cancelled = true;
+    };
   }, [status]);
 
   if (status === "loading") {
@@ -85,7 +124,7 @@ export default function CalendarWidget() {
           </div>
           <div>
             <h3 className="text-zinc-100 font-semibold text-lg">Twój Kalendarz</h3>
-            <p className="text-zinc-400 text-sm">{session?.user?.email}</p>
+            <p className="text-zinc-400 text-sm">{typedSession?.user?.email}</p>
           </div>
         </div>
         
@@ -112,8 +151,9 @@ export default function CalendarWidget() {
               const isTodayDate = isToday(date);
               
               // Sprawdzamy czy w tym dniu są jakieś wydarzenia (wizualne podświetlenie)
-              const hasEvents = events.some(ev => {
-                  const evDate = ev.start.dateTime ? new Date(ev.start.dateTime) : new Date(ev.start.date);
+              const hasEvents = (events ?? []).some(ev => {
+                  const evDate = getEventStartDate(ev);
+                  if (!evDate) return false;
                   return isSameDay(date, evDate);
               });
               
@@ -144,20 +184,20 @@ export default function CalendarWidget() {
                  <div key={i} className="h-28 bg-white/5 animate-pulse rounded-2xl w-full"></div>
                ))}
              </div>
-          ) : events.length === 0 ? (
+          ) : (events ?? []).length === 0 ? (
             <div className="text-center py-12 bg-white/[0.02] border border-white/5 rounded-2xl">
               <p className="text-zinc-400">Brak nadchodzących wydarzeń! 🎉</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {events.map((event) => {
-                const startDate = event.start.dateTime ? new Date(event.start.dateTime) : new Date(event.start.date);
+              {(events ?? []).map((event) => {
+                const startDate = getEventStartDate(event) ?? new Date();
                 const fmtDate = format(startDate, "d MMM", { locale: pl });
                 const fmtTime = event.start.dateTime ? format(startDate, "HH:mm") : "Cały";
 
                 return (
                   <div key={event.id} className="bg-white/5 border border-white/5 hover:border-white/10 hover:bg-white/[0.07] transition-all rounded-2xl p-5 flex flex-col justify-between min-h-[7rem]">
-                    <h4 className="text-zinc-100 font-medium line-clamp-2 mb-3" title={event.summary}>
+                    <h4 className="text-zinc-100 font-medium line-clamp-2 mb-3" title={event.summary ?? undefined}>
                       {event.summary || "(Brak tytułu)"}
                     </h4>
                     <div className="flex items-center justify-between mt-auto">

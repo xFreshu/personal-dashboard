@@ -1,12 +1,32 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
+import type { Session } from "next-auth";
+import type { JWT } from "next-auth/jwt";
 import GoogleProvider from "next-auth/providers/google";
+
+type GoogleTokenResponse = {
+  access_token: string;
+  expires_in: number;
+  refresh_token?: string;
+};
+
+type ExtendedToken = JWT & {
+  accessToken?: string;
+  accessTokenExpires: number;
+  refreshToken?: string;
+  error?: string;
+};
+
+type SessionWithAccessToken = Session & {
+  accessToken?: string;
+  error?: string;
+};
 
 /**
  * Takes a token, and returns a new token with updated
  * `accessToken` and `accessTokenExpires`. If an error occurs,
  * returns the old token and an error property
  */
-async function refreshAccessToken(token: any) {
+async function refreshAccessToken(token: ExtendedToken): Promise<ExtendedToken> {
   try {
     const url =
       "https://oauth2.googleapis.com/token?" +
@@ -14,7 +34,7 @@ async function refreshAccessToken(token: any) {
         client_id: process.env.GOOGLE_CLIENT_ID || "",
         client_secret: process.env.GOOGLE_CLIENT_SECRET || "",
         grant_type: "refresh_token",
-        refresh_token: token.refreshToken,
+        refresh_token: token.refreshToken ?? "",
       });
 
     const response = await fetch(url, {
@@ -24,7 +44,7 @@ async function refreshAccessToken(token: any) {
       method: "POST",
     });
 
-    const refreshedTokens = await response.json();
+    const refreshedTokens = (await response.json()) as GoogleTokenResponse;
 
     if (!response.ok) {
       throw refreshedTokens;
@@ -62,30 +82,35 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, account, user }: any) {
+    async jwt({ token, account, user }) {
+      const currentToken = token as ExtendedToken;
+
       // Przy pierwszym logowaniu
       if (account && user) {
         return {
-          ...token,
+          ...currentToken,
           accessToken: account.access_token,
           accessTokenExpires: account.expires_at ? account.expires_at * 1000 : Date.now() + 3600 * 1000,
           refreshToken: account.refresh_token,
-        };
+        } satisfies ExtendedToken;
       }
 
       // Jeżeli token jest wciąż ważny (np. dodajemy mały bufor 1 minuty)
-      if (Date.now() < token.accessTokenExpires - 60 * 1000) {
-        return token;
+      if (Date.now() < currentToken.accessTokenExpires - 60 * 1000) {
+        return currentToken;
       }
 
       // Zwróć nowy, odświeżony token
-      return refreshAccessToken(token);
+      return refreshAccessToken(currentToken);
     },
-    async session({ session, token }: any) {
+    async session({ session, token }) {
+      const nextSession = session as SessionWithAccessToken;
+      const nextToken = token as ExtendedToken;
+
       // Przekazujemy access token i ewentualne błędy do obiektu sesji
-      session.accessToken = token.accessToken;
-      session.error = token.error;
-      return session;
+      nextSession.accessToken = nextToken.accessToken;
+      nextSession.error = nextToken.error;
+      return nextSession;
     },
   },
   secret: process.env.NEXTAUTH_SECRET,

@@ -6,19 +6,14 @@ import { format } from "date-fns";
 import { pl } from "date-fns/locale";
 
 export default function ClockWidget() {
-  const [time, setTime] = useState<Date | null>(null);
+  const [time, setTime] = useState(() => new Date());
 
   useEffect(() => {
-    setTime(new Date());
     const interval = setInterval(() => {
       setTime(new Date());
     }, 1000);
     return () => clearInterval(interval);
   }, []);
-
-  if (!time) {
-    return <div className="h-full min-h-[6rem] bg-card rounded-3xl border border-border animate-pulse p-4"></div>;
-  }
 
   return (
     <div className="h-full min-h-[6rem] bg-card rounded-3xl border border-border p-4 flex flex-col justify-between shadow-sm relative overflow-hidden group hover:border-zinc-700 transition-all duration-300">

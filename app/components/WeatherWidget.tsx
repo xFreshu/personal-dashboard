@@ -32,9 +32,6 @@ export default function WeatherWidget() {
         const res = await fetch(url);
         if (!res.ok) throw new Error("Failed to fetch weather");
         const data = await res.json();
-        
-        const now = new Date();
-        const currentHour = now.getHours();
 
         const chartData = data.hourly.time
            .map((timeStr: string, index: number) => {
@@ -57,7 +54,7 @@ export default function WeatherWidget() {
              { timeAbbr: "Teraz", temp: data.current.temperature_2m }
           ],
         });
-      } catch (err) {
+      } catch {
         setError("Wystąpił błąd przy pobieraniu pogody.");
       } finally {
         setLoading(false);
@@ -132,7 +129,10 @@ export default function WeatherWidget() {
                   contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', borderRadius: '0.75rem', fontSize: '0.875rem' }}
                   itemStyle={{ color: '#fafafa' }}
                   labelStyle={{ color: '#a1a1aa', marginBottom: '4px' }}
-                  formatter={(value: any) => [`${Math.round(value)}°C`, 'Temperatura']}
+                  formatter={(value) => {
+                    const normalized = Array.isArray(value) ? value[0] : value;
+                    return [`${Math.round(Number(normalized ?? 0))}°C`, 'Temperatura'];
+                  }}
                   labelFormatter={(label) => `Godzina ${label}`}
                 />
                 <Line 
