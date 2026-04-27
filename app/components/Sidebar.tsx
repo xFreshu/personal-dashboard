@@ -6,6 +6,7 @@ import { useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
+  Code2,
   GraduationCap,
   LayoutDashboard,
 } from "lucide-react";
@@ -24,6 +25,11 @@ export default function Sidebar() {
       name: "Nauka",
       href: "/learning",
       icon: GraduationCap,
+    },
+    {
+      name: "GitHub",
+      href: "/github",
+      icon: Code2,
     },
   ];
 

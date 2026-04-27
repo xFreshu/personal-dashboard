@@ -16,6 +16,18 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## GitHub widget
+
+Add these variables to your local environment:
+
+```bash
+GITHUB_USERNAME=your-login
+GITHUB_TOKEN=github_pat_or_app_token
+GITHUB_REPOS=owner/repo,owner/another-repo
+```
+
+`GITHUB_TOKEN` should be a read-only GitHub token. It is required for the contribution calendar and recommended for GitHub Actions / private repository data.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
