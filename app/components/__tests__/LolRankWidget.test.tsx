@@ -71,6 +71,53 @@ describe("LolRankWidget", () => {
     );
   });
 
+  it("shows when an account is currently in game and links to DPM live", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        json: async () => ({
+          configured: true,
+          accounts: [
+            {
+              profile: {
+                gameName: "LivePlayer",
+                tagLine: "EUW",
+                platform: "EUW1",
+              },
+              error: null,
+              primaryQueue: null,
+              soloQueue: null,
+              flexQueue: null,
+              liveGame: {
+                status: "active",
+                gameId: 123,
+                gameMode: "CLASSIC",
+                gameType: "MATCHED_GAME",
+                gameStartTime: 1_776_000_000_000,
+                queueId: 420,
+                participantCount: 10,
+              },
+              links: {
+                overview: "https://dpm.lol/LivePlayer-EUW",
+                champions: "https://dpm.lol/LivePlayer-EUW/champions",
+                live: "https://dpm.lol/LivePlayer-EUW/live",
+              },
+            },
+          ],
+        }),
+      }),
+    );
+
+    render(<LolRankWidget />);
+
+    expect(await screen.findByText("W grze teraz")).toBeInTheDocument();
+    expect(screen.getByText("CLASSIC · kolejka 420 · 10 graczy")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Live DPM/i })).toHaveAttribute(
+      "href",
+      "https://dpm.lol/LivePlayer-EUW/live",
+    );
+  });
+
   it("shows missing Riot configuration details", async () => {
     vi.stubGlobal(
       "fetch",

@@ -11,6 +11,15 @@ type RiotLeagueEntry = {
   losses: number;
 };
 
+type RiotCurrentGame = {
+  gameId: number;
+  gameMode: string;
+  gameType: string;
+  gameStartTime: number;
+  queueId: number;
+  participants: unknown[];
+};
+
 type RankedQueue = {
   queueType: string;
   tier: string;
@@ -26,6 +35,24 @@ type LolAccountConfig = {
   tagLine: string;
   platform: string;
 };
+
+type LiveGameStatus =
+  | {
+      status: "active";
+      gameId: number;
+      gameMode: string;
+      gameType: string;
+      gameStartTime: number;
+      queueId: number;
+      participantCount: number;
+    }
+  | {
+      status: "inactive";
+    }
+  | {
+      status: "unknown";
+      error: string;
+    };
 
 const PLATFORM_TO_REGION: Record<string, string> = {
   BR1: "AMERICAS",
@@ -94,6 +121,16 @@ function normalizePlatform(value: string) {
   return PLATFORM_ALIASES[normalized] ?? normalized;
 }
 
+function getDpmLinks(gameName: string, tagLine: string) {
+  const overview = getDpmUrl(gameName, tagLine);
+
+  return {
+    overview,
+    champions: `${overview}/champions`,
+    live: `${overview}/live`,
+  };
+}
+
 function parseAccounts(input: string | undefined) {
   if (!input) return [];
 
@@ -117,6 +154,52 @@ function parseAccounts(input: string | undefined) {
     .filter((entry): entry is LolAccountConfig => entry !== null);
 }
 
+async function fetchLiveGame(
+  accountConfig: LolAccountConfig,
+  puuid: string,
+  apiKey: string,
+): Promise<LiveGameStatus> {
+  try {
+    const liveGameResponse = await fetch(
+      `https://${accountConfig.platform.toLowerCase()}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${encodeURIComponent(
+        puuid,
+      )}`,
+      {
+        headers: createRiotHeaders(apiKey),
+        cache: "no-store",
+      },
+    );
+
+    if (liveGameResponse.status === 404) {
+      return { status: "inactive" };
+    }
+
+    if (!liveGameResponse.ok) {
+      return {
+        status: "unknown",
+        error: `Live game lookup failed (${liveGameResponse.status}).`,
+      };
+    }
+
+    const liveGame = (await liveGameResponse.json()) as RiotCurrentGame;
+
+    return {
+      status: "active",
+      gameId: liveGame.gameId,
+      gameMode: liveGame.gameMode,
+      gameType: liveGame.gameType,
+      gameStartTime: liveGame.gameStartTime,
+      queueId: liveGame.queueId,
+      participantCount: liveGame.participants.length,
+    };
+  } catch {
+    return {
+      status: "unknown",
+      error: "Live game lookup failed.",
+    };
+  }
+}
+
 async function fetchRankForAccount(accountConfig: LolAccountConfig, apiKey: string) {
   const regionalRoute = PLATFORM_TO_REGION[accountConfig.platform];
 
@@ -127,15 +210,15 @@ async function fetchRankForAccount(accountConfig: LolAccountConfig, apiKey: stri
       primaryQueue: null,
       soloQueue: null,
       flexQueue: null,
-      links: {
-        overview: getDpmUrl(accountConfig.gameName, accountConfig.tagLine),
-        champions: `${getDpmUrl(accountConfig.gameName, accountConfig.tagLine)}/champions`,
-        live: `${getDpmUrl(accountConfig.gameName, accountConfig.tagLine)}/live`,
+      liveGame: {
+        status: "unknown",
+        error: `Unsupported platform ${accountConfig.platform}.`,
       },
+      links: getDpmLinks(accountConfig.gameName, accountConfig.tagLine),
     };
   }
 
-  const dpmUrl = getDpmUrl(accountConfig.gameName, accountConfig.tagLine);
+  const dpmLinks = getDpmLinks(accountConfig.gameName, accountConfig.tagLine);
 
   const accountResponse = await fetch(
     `https://${regionalRoute.toLowerCase()}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(
@@ -154,11 +237,8 @@ async function fetchRankForAccount(accountConfig: LolAccountConfig, apiKey: stri
       primaryQueue: null,
       soloQueue: null,
       flexQueue: null,
-      links: {
-        overview: dpmUrl,
-        champions: `${dpmUrl}/champions`,
-        live: `${dpmUrl}/live`,
-      },
+      liveGame: { status: "unknown", error: `Riot account lookup failed (${accountResponse.status}).` },
+      links: dpmLinks,
     };
   }
 
@@ -179,11 +259,8 @@ async function fetchRankForAccount(accountConfig: LolAccountConfig, apiKey: stri
       primaryQueue: null,
       soloQueue: null,
       flexQueue: null,
-      links: {
-        overview: dpmUrl,
-        champions: `${dpmUrl}/champions`,
-        live: `${dpmUrl}/live`,
-      },
+      liveGame: { status: "unknown", error: `Summoner lookup failed (${summonerResponse.status}).` },
+      links: dpmLinks,
     };
   }
 
@@ -212,11 +289,8 @@ async function fetchRankForAccount(accountConfig: LolAccountConfig, apiKey: stri
       primaryQueue: null,
       soloQueue: null,
       flexQueue: null,
-      links: {
-        overview: dpmUrl,
-        champions: `${dpmUrl}/champions`,
-        live: `${dpmUrl}/live`,
-      },
+      liveGame: { status: "unknown", error: `Ranked lookup failed (${leagueResponse.status}).` },
+      links: dpmLinks,
     };
   }
 
@@ -224,6 +298,7 @@ async function fetchRankForAccount(accountConfig: LolAccountConfig, apiKey: stri
   const soloQueue = entries.find((entry) => entry.queueType === "RANKED_SOLO_5x5");
   const flexQueue = entries.find((entry) => entry.queueType === "RANKED_FLEX_SR");
   const primaryQueue = soloQueue ?? flexQueue ?? null;
+  const liveGame = await fetchLiveGame(accountConfig, riotAccount.puuid, apiKey);
 
   return {
     profile: {
@@ -235,11 +310,8 @@ async function fetchRankForAccount(accountConfig: LolAccountConfig, apiKey: stri
     primaryQueue: primaryQueue ? normalizeQueue(primaryQueue) : null,
     soloQueue: soloQueue ? normalizeQueue(soloQueue) : null,
     flexQueue: flexQueue ? normalizeQueue(flexQueue) : null,
-    links: {
-      overview: dpmUrl,
-      champions: `${dpmUrl}/champions`,
-      live: `${dpmUrl}/live`,
-    },
+    liveGame,
+    links: dpmLinks,
   };
 }
 

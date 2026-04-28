@@ -335,6 +335,17 @@ describe("API routes", () => {
             losses: 8,
           },
         ],
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          gameId: 123,
+          gameMode: "CLASSIC",
+          gameType: "MATCHED_GAME",
+          gameStartTime: 1_776_000_000_000,
+          queueId: 420,
+          participants: Array.from({ length: 10 }),
+        }),
       } as Response);
 
     const response = await GET();
@@ -347,9 +358,49 @@ describe("API routes", () => {
       rank: "II",
       winRate: 60,
     });
+    expect(body.accounts[0].liveGame).toMatchObject({
+      status: "active",
+      gameId: 123,
+      gameMode: "CLASSIC",
+      queueId: 420,
+      participantCount: 10,
+    });
     expect(body.accounts[1]).toMatchObject({
       error: "Unsupported platform UNKNOWN.",
       primaryQueue: null,
+    });
+  });
+
+  it("marks LoL accounts as inactive when Spectator has no active game", async () => {
+    const { GET } = await import("../lol/rank/route");
+    process.env.RIOT_API_KEY = "riot-key";
+    process.env.LOL_ACCOUNTS = "TestPlayer|EUW|EUW";
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ puuid: "puuid-1" }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ id: "summoner-1", summonerLevel: 123, profileIconId: 7 }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        json: async () => ({}),
+      } as Response);
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.accounts[0]).toMatchObject({
+      primaryQueue: null,
+      liveGame: { status: "inactive" },
     });
   });
 

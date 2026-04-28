@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ExternalLink,
+  Radio,
   Trophy,
 } from "lucide-react";
 import { Skeleton } from "./Skeleton";
@@ -20,6 +21,24 @@ type RankedQueue = {
   winRate: number;
 };
 
+type LiveGameStatus =
+  | {
+      status: "active";
+      gameId: number;
+      gameMode: string;
+      gameType: string;
+      gameStartTime: number;
+      queueId: number;
+      participantCount: number;
+    }
+  | {
+      status: "inactive";
+    }
+  | {
+      status: "unknown";
+      error: string;
+    };
+
 type AccountRankData = {
   profile: {
     gameName: string;
@@ -31,6 +50,7 @@ type AccountRankData = {
   primaryQueue: RankedQueue | null;
   soloQueue: RankedQueue | null;
   flexQueue: RankedQueue | null;
+  liveGame?: LiveGameStatus;
   links: {
     overview: string;
     champions: string;
@@ -77,17 +97,63 @@ function tierColor(tier?: string) {
   }
 }
 
-function LinkButton({ href, label }: { href: string; label: string }) {
+function LinkButton({
+  href,
+  label,
+  active = false,
+}: {
+  href: string;
+  label: string;
+  active?: boolean;
+}) {
   return (
     <a
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-zinc-300 transition-colors hover:bg-white/10 hover:text-zinc-100"
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
+        active
+          ? "border-emerald-400/30 bg-emerald-500/15 text-emerald-200 hover:bg-emerald-500/25 hover:text-emerald-100"
+          : "border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10 hover:text-zinc-100"
+      }`}
     >
       <span>{label}</span>
       <ExternalLink className="size-3.5" />
     </a>
+  );
+}
+
+function LiveGameBadge({ liveGame }: { liveGame?: LiveGameStatus }) {
+  if (liveGame?.status === "active") {
+    return (
+      <div className="mt-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-3 py-2">
+        <div className="flex items-center gap-2">
+          <Radio className="size-3.5 text-emerald-300" />
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-200">
+            W grze teraz
+          </p>
+        </div>
+        <p className="mt-1 text-[11px] text-emerald-100/75">
+          {liveGame.gameMode} · kolejka {liveGame.queueId} · {liveGame.participantCount} graczy
+        </p>
+      </div>
+    );
+  }
+
+  if (liveGame?.status === "unknown") {
+    return (
+      <div className="mt-3 flex items-center gap-2 text-[11px] text-zinc-600">
+        <span className="inline-flex h-1.5 w-1.5 rounded-full bg-zinc-600" />
+        <span>Status live niedostępny</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 flex items-center gap-2 text-[11px] text-zinc-500">
+      <span className="inline-flex h-1.5 w-1.5 rounded-full bg-zinc-700" />
+      <span>Poza grą</span>
+    </div>
   );
 }
 
@@ -264,6 +330,7 @@ export default function LolRankWidget() {
   const summaryLabel = primaryQueue
     ? `${primaryQueue.leaguePoints} LP · ${primaryQueue.wins}W-${primaryQueue.losses}L`
     : "Brak aktywnej rangi";
+  const isLive = currentAccount.liveGame?.status === "active";
 
   return (
     <div className="h-full min-h-[9.25rem] bg-card rounded-3xl border border-border p-4 shadow-sm relative overflow-hidden group hover:border-zinc-700 transition-all duration-300">
@@ -372,6 +439,8 @@ export default function LolRankWidget() {
                   {primaryQueue.winRate}% win rate
                 </div>
               )}
+
+              <LiveGameBadge liveGame={currentAccount.liveGame} />
             </>
           )}
         </div>
@@ -382,7 +451,7 @@ export default function LolRankWidget() {
           </div>
           <div className="flex flex-wrap gap-1.5 justify-end">
             <LinkButton href={currentAccount.links.overview} label="DPM" />
-            <LinkButton href={currentAccount.links.live} label="Live" />
+            <LinkButton href={currentAccount.links.live} label={isLive ? "Live DPM" : "Live"} active={isLive} />
           </div>
         </div>
       </div>
