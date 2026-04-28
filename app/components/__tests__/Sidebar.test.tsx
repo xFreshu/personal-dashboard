@@ -46,4 +46,24 @@ describe("Sidebar", () => {
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
     expect(screen.getByText("Nauka")).toBeInTheDocument();
   });
+
+  it("closes with the mobile backdrop and after a mobile link click", async () => {
+    const user = userEvent.setup();
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      value: 480,
+      writable: true,
+    });
+    const { container } = render(<Sidebar />);
+
+    await user.click(screen.getByRole("button", { name: /Rozwiń sidebar/i }));
+    expect(container.querySelector("aside")).toHaveClass("w-72");
+
+    await user.click(screen.getByRole("button", { name: /Zamknij sidebar/i }));
+    expect(container.querySelector("aside")).toHaveClass("w-20");
+
+    await user.click(screen.getByRole("button", { name: /Rozwiń sidebar/i }));
+    await user.click(screen.getByRole("link", { name: /Dashboard/i }));
+    expect(container.querySelector("aside")).toHaveClass("w-20");
+  });
 });

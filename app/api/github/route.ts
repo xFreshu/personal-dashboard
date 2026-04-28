@@ -536,7 +536,7 @@ export async function GET() {
 
     const publicEvents = events
       .filter((event) =>
-        ["PushEvent", "PullRequestEvent", "IssuesEvent", "WatchEvent", "CreateEvent", "ReleaseEvent"].includes(
+        ["PushEvent", "PullRequestEvent", "IssuesEvent", "WatchEvent", "CreateEvent", "ReleaseEvent", "ForkEvent"].includes(
           event.type,
         ),
       )
