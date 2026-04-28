@@ -8,6 +8,7 @@ import {
   ExternalLink,
   Trophy,
 } from "lucide-react";
+import { Skeleton } from "./Skeleton";
 
 type RankedQueue = {
   queueType: string;
@@ -183,7 +184,38 @@ export default function LolRankWidget() {
 
   if (loading) {
     return (
-      <div className="h-full min-h-[9.25rem] bg-card rounded-3xl border border-border animate-pulse p-4" />
+      <div className="h-full min-h-[9.25rem] bg-card rounded-3xl border border-border p-4 shadow-sm">
+        <div className="flex h-full flex-col justify-between gap-4">
+          <div>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 space-y-2">
+                <Skeleton className="h-3 w-24 rounded-full" />
+                <Skeleton className="h-4 w-36 rounded-full" />
+              </div>
+              <div className="flex gap-1">
+                <Skeleton className="size-8 rounded-full" />
+                <Skeleton className="size-8 rounded-full" />
+                <Skeleton className="size-8 rounded-full" />
+              </div>
+            </div>
+            <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-24 rounded-full" />
+                <Skeleton className="h-8 w-44 rounded-lg" />
+              </div>
+              <Skeleton className="h-5 w-16 rounded-full" />
+            </div>
+            <Skeleton className="mt-3 h-3 w-40 rounded-full" />
+          </div>
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-3 w-16 rounded-full" />
+            <div className="flex gap-2">
+              <Skeleton className="h-6 w-14 rounded-full" />
+              <Skeleton className="h-6 w-14 rounded-full" />
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
 

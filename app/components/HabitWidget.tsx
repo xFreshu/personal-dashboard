@@ -12,6 +12,7 @@ import {
   parseISO,
 } from "date-fns";
 import { pl } from "date-fns/locale";
+import { Skeleton } from "./Skeleton";
 
 type HabitKey = "trening" | "nauka" | "suplementacja";
 
@@ -216,6 +217,53 @@ export default function HabitWidget() {
   const daysInMonth = getDaysInMonth(currentDate);
   const passedDays = isCurrentMonth ? today.getDate() : daysInMonth;
 
+  if (loading) {
+    return (
+      <div className="col-span-1 md:col-span-2 lg:col-span-4 bg-card/40 backdrop-blur-md border border-white/5 rounded-3xl p-6 lg:p-8 shadow-lg flex flex-col gap-6 relative overflow-hidden group">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 -mt-24 w-96 h-64 bg-violet-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="z-10 flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-5 w-32 rounded-full" />
+            <Skeleton className="h-4 w-64 max-w-full rounded-full" />
+          </div>
+          <div className="flex items-center gap-3">
+            <Skeleton className="size-8 rounded-full" />
+            <Skeleton className="h-4 w-28 rounded-full" />
+            <Skeleton className="size-8 rounded-full" />
+          </div>
+        </div>
+
+        <div className="z-10 grid grid-cols-1 gap-5 xl:grid-cols-3">
+          {HABITS.map((habit) => (
+            <div
+              key={habit.key}
+              className="rounded-2xl border border-white/5 bg-white/[0.03] p-5"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <Skeleton className="size-9 rounded-xl" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-24 rounded-full" />
+                    <Skeleton className="h-3 w-32 rounded-full" />
+                  </div>
+                </div>
+                <Skeleton className="h-6 w-12 rounded-full" />
+              </div>
+
+              <Skeleton className="mt-4 h-1.5 w-full rounded-full" />
+
+              <div className="mt-4 grid grid-cols-7 gap-1">
+                {Array.from({ length: 35 }).map((_, index) => (
+                  <Skeleton key={index} className="h-7 w-7 rounded-md" />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="col-span-1 md:col-span-2 lg:col-span-4 bg-card/40 backdrop-blur-md border border-white/5 rounded-3xl p-6 lg:p-8 shadow-lg flex flex-col gap-6 relative overflow-hidden group">
       {/* BG decoration */}
@@ -248,7 +296,7 @@ export default function HabitWidget() {
       </div>
 
       {/* Grid nawyków */}
-      <div className={`z-10 grid grid-cols-1 xl:grid-cols-3 gap-5 ${loading ? "opacity-50 pointer-events-none" : ""}`}>
+      <div className="z-10 grid grid-cols-1 xl:grid-cols-3 gap-5">
         {HABITS.map((habit) => {
           const count = getMonthCount(habit.key);
           const streak = getStreak(habit.key);
@@ -300,12 +348,6 @@ export default function HabitWidget() {
           );
         })}
       </div>
-
-      {loading && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="animate-pulse text-zinc-500 text-sm">Ładowanie...</div>
-        </div>
-      )}
     </div>
   );
 }

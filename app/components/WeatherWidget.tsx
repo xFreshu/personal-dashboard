@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Cloud, CloudRain, Sun, Droplets, MapPin, Wind, ArrowUp, ArrowDown } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer, YAxis, Tooltip, XAxis } from "recharts";
+import { Skeleton } from "./Skeleton";
 
 interface HourlyData {
   timeAbbr: string;
@@ -67,7 +68,30 @@ export default function WeatherWidget() {
   }, []);
 
   if (loading) {
-    return <div className="h-full min-h-[8rem] bg-card rounded-3xl border border-border animate-pulse p-4"></div>;
+    return (
+      <div className="h-full min-h-[8rem] bg-card rounded-3xl border border-border p-4 shadow-sm">
+        <div className="flex h-full flex-col justify-between gap-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-20 rounded-lg" />
+              <div className="flex gap-2">
+                <Skeleton className="h-4 w-10 rounded-full" />
+                <Skeleton className="h-4 w-10 rounded-full" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="ml-auto h-4 w-20 rounded-full" />
+              <Skeleton className="ml-auto h-3 w-16 rounded-full" />
+            </div>
+          </div>
+          <Skeleton className="h-8 w-full rounded-xl" />
+          <div className="flex gap-4 border-t border-zinc-800/50 pt-2">
+            <Skeleton className="h-4 w-20 rounded-full" />
+            <Skeleton className="h-4 w-16 rounded-full" />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (error || !weather) {

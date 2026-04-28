@@ -9,6 +9,7 @@ import {
   Cpu,
   Gauge,
 } from "lucide-react";
+import { Skeleton } from "./Skeleton";
 
 type CodexTokensResponse =
   | {
@@ -163,7 +164,55 @@ export default function CodexTokensWidget() {
   if (loading) {
     return (
       <div className="h-full min-h-[22rem] rounded-3xl border border-border bg-card p-4 shadow-sm">
-        <div className="h-full animate-pulse rounded-2xl bg-white/[0.03]" />
+        <div className="flex h-full flex-col gap-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-16 rounded-full" />
+              <Skeleton className="h-8 w-52 rounded-lg" />
+            </div>
+            <Skeleton className="h-7 w-28 rounded-full" />
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            {[0, 1, 2].map((item) => (
+              <div key={item} className="rounded-2xl border border-white/5 bg-white/[0.03] p-3">
+                <Skeleton className="mb-3 h-3 w-16 rounded-full" />
+                <Skeleton className="h-5 w-20 rounded-full" />
+              </div>
+            ))}
+          </div>
+
+          <div className="rounded-2xl border border-white/5 bg-white/[0.03] p-3">
+            <div className="mb-3 flex items-center justify-between">
+              <Skeleton className="h-3 w-24 rounded-full" />
+              <Skeleton className="h-3 w-16 rounded-full" />
+            </div>
+            <div className="flex h-24 items-end gap-2">
+              {[48, 72, 36, 90, 58, 80, 44].map((height, index) => (
+                <div key={index} className="flex min-w-0 flex-1 flex-col items-center gap-2">
+                  <Skeleton className="w-full rounded-t-lg" style={{ height: `${height}%` }} />
+                  <Skeleton className="h-2 w-6 rounded-full" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-[0.85fr_1.15fr]">
+            {[0, 1].map((item) => (
+              <div key={item} className="rounded-2xl border border-white/5 bg-white/[0.03] p-3">
+                <Skeleton className="mb-3 h-3 w-24 rounded-full" />
+                <div className="space-y-2">
+                  {[0, 1, 2].map((line) => (
+                    <div key={line} className="flex items-center justify-between gap-3">
+                      <Skeleton className="h-3 w-28 rounded-full" />
+                      <Skeleton className="h-3 w-12 rounded-full" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }

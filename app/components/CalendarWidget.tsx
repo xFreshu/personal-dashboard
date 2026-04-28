@@ -6,6 +6,7 @@ import type { Session } from "next-auth";
 import { Calendar, LogIn, LogOut, Clock } from "lucide-react";
 import { addDays, addMonths, format, startOfDay, endOfDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isToday, isSameDay } from "date-fns";
 import { pl } from "date-fns/locale";
+import { Skeleton } from "./Skeleton";
 
 type CalendarEvent = {
   id: string;
@@ -195,9 +196,31 @@ export default function CalendarWidget() {
 
   if (status === "loading") {
     return (
-      <div className="col-span-1 md:col-span-2 lg:col-span-4 min-h-[16rem] bg-card/40 border border-white/5 rounded-3xl p-8 flex items-center justify-center shadow-lg">
-        <div className="animate-pulse flex items-center gap-2 text-zinc-400">
-           Wczytywanie...
+      <div className="col-span-1 md:col-span-2 lg:col-span-4 min-h-[16rem] bg-card/40 border border-white/5 rounded-3xl p-6 lg:p-8 shadow-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Skeleton className="size-11 rounded-2xl" />
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-36 rounded-full" />
+              <Skeleton className="h-3 w-48 rounded-full" />
+            </div>
+          </div>
+          <Skeleton className="size-9 rounded-full" />
+        </div>
+        <div className="mt-8 grid grid-cols-1 gap-6 2xl:grid-cols-[40rem_minmax(0,1fr)]">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {[0, 1].map((month) => (
+              <div key={month} className="rounded-2xl border border-white/5 bg-white/[0.025] p-4">
+                <Skeleton className="mx-auto mb-4 h-5 w-32 rounded-full" />
+                <div className="grid grid-cols-7 gap-1">
+                  {Array.from({ length: 42 }).map((_, index) => (
+                    <Skeleton key={index} className="mx-auto size-8 rounded-full" />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <CalendarEventsSkeleton />
         </div>
       </div>
     );
@@ -263,11 +286,7 @@ export default function CalendarWidget() {
         {/* Prawa kolumna: Wydarzenia */}
         <div className="min-w-0">
           {loading ? (
-             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-               {[1, 2, 3, 4, 5, 6].map(i => (
-                 <div key={i} className="h-28 bg-white/5 animate-pulse rounded-2xl w-full"></div>
-               ))}
-             </div>
+            <CalendarEventsSkeleton />
           ) : (events ?? []).length === 0 ? (
             <div className="text-center py-12 bg-white/[0.02] border border-white/5 rounded-2xl">
               <p className="text-zinc-400">Brak nadchodzących wydarzeń! 🎉</p>
@@ -299,6 +318,23 @@ export default function CalendarWidget() {
         </div>
 
       </div>
+    </div>
+  );
+}
+
+function CalendarEventsSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+      {[0, 1, 2, 3, 4, 5].map((item) => (
+        <div key={item} className="min-h-[7rem] rounded-2xl border border-white/5 bg-white/5 p-5">
+          <Skeleton className="h-4 w-4/5 rounded-full" />
+          <Skeleton className="mt-2 h-4 w-3/5 rounded-full" />
+          <div className="mt-6 flex items-center justify-between">
+            <Skeleton className="h-7 w-20 rounded-full" />
+            <Skeleton className="h-3 w-14 rounded-full" />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

@@ -11,6 +11,7 @@ import {
   Star,
   Workflow,
 } from "lucide-react";
+import { Skeleton } from "./Skeleton";
 
 type ContributionDay = {
   date: string;
@@ -371,7 +372,72 @@ export default function GitHubWidget() {
   if (loading) {
     return (
       <div className="h-full min-h-[28rem] rounded-3xl border border-border bg-card p-5 shadow-sm">
-        <div className="h-full animate-pulse rounded-2xl bg-white/5" />
+        <div className="flex h-full flex-col gap-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <Skeleton className="size-14 shrink-0 rounded-2xl" />
+              <div className="min-w-0 space-y-2">
+                <Skeleton className="h-3 w-28 rounded-full" />
+                <Skeleton className="h-5 w-44 rounded-full" />
+                <Skeleton className="h-3 w-24 rounded-full" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:w-[29rem]">
+              {[0, 1, 2, 3].map((item) => (
+                <div key={item} className="rounded-2xl border border-white/5 bg-white/[0.03] px-3 py-2">
+                  <Skeleton className="h-3 w-12 rounded-full" />
+                  <Skeleton className="mt-2 h-4 w-10 rounded-full" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-5">
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+              <div className="mb-5 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
+                <div className="space-y-2">
+                  <Skeleton className="h-3 w-36 rounded-full" />
+                  <Skeleton className="h-7 w-56 rounded-lg" />
+                  <Skeleton className="h-3 w-72 max-w-full rounded-full" />
+                </div>
+                <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3">
+                  <Skeleton className="h-3 w-24 rounded-full" />
+                  <Skeleton className="mt-2 h-4 w-28 rounded-full" />
+                  <Skeleton className="mt-2 h-3 w-36 rounded-full" />
+                </div>
+              </div>
+              <div className="overflow-hidden rounded-2xl border border-white/5 bg-zinc-950/70 p-4">
+                <Skeleton className="mb-3 h-4 w-full rounded-full" />
+                <div className="grid grid-cols-[repeat(26,0.875rem)] gap-1 overflow-hidden">
+                  {Array.from({ length: 104 }).map((_, index) => (
+                    <Skeleton key={index} className="size-3.5 rounded-[4px]" />
+                  ))}
+                </div>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-6">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <div key={index} className="rounded-2xl border border-white/5 bg-white/[0.03] px-3 py-2">
+                    <Skeleton className="h-3 w-16 rounded-full" />
+                    <Skeleton className="mt-2 h-4 w-10 rounded-full" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-5 2xl:grid-cols-[minmax(0,1fr)_minmax(28rem,0.75fr)]">
+              {[0, 1].map((section) => (
+                <div key={section} className="rounded-2xl border border-white/5 bg-white/[0.025] p-4">
+                  <Skeleton className="mb-4 h-3 w-40 rounded-full" />
+                  <div className="space-y-2">
+                    {[0, 1, 2].map((line) => (
+                      <Skeleton key={line} className="h-10 w-full rounded-2xl" />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
