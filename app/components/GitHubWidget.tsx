@@ -18,6 +18,11 @@ type ContributionDay = {
   color: string;
 };
 
+type ContributionWeek = {
+  days: ContributionDay[];
+  monthKey: string;
+};
+
 type GitHubRepository = {
   name: string;
   fullName: string;
@@ -191,12 +196,18 @@ function formatContributionLabel(count: number) {
   return `${count} commitów`;
 }
 
-function contributionColor(count: number) {
+function contributionColor(count: number, maxCount: number) {
   if (count === 0) return "#27272a";
-  if (count < 3) return "#14532d";
-  if (count < 6) return "#15803d";
-  if (count < 10) return "#22c55e";
+  const ratio = count / Math.max(maxCount, 1);
+  if (ratio <= 0.25) return "#14532d";
+  if (ratio <= 0.5) return "#15803d";
+  if (ratio <= 0.75) return "#22c55e";
   return "#86efac";
+}
+
+function monthKey(dateValue: string) {
+  const date = new Date(dateValue);
+  return `${date.getFullYear()}-${date.getMonth()}`;
 }
 
 function StatPill({
@@ -290,47 +301,72 @@ export default function GitHubWidget() {
   }, [data]);
 
   const contributionWeeks = useMemo(() => {
-    const weeks: ContributionDay[][] = [];
+    const weeks: ContributionWeek[] = [];
 
     for (let index = 0; index < contributionDays.length; index += 7) {
-      weeks.push(contributionDays.slice(index, index + 7));
+      const days = contributionDays.slice(index, index + 7);
+      const firstDay = days[0];
+
+      if (firstDay) {
+        weeks.push({
+          days,
+          monthKey: monthKey(firstDay.date),
+        });
+      }
     }
 
     return weeks;
   }, [contributionDays]);
 
-  const contributionMonths = useMemo(() => {
-    const months: {
+  const contributionMonthMarkers = useMemo(() => {
+    const markers: {
       key: string;
       label: string;
-      weeks: ContributionDay[][];
+      start: number;
+      span: number;
       total: number;
     }[] = [];
 
-    contributionWeeks.forEach((week) => {
-      const firstDay = week[0];
+    contributionWeeks.forEach((week, index) => {
+      const firstDay = week.days[0];
       if (!firstDay) return;
 
-      const date = new Date(firstDay.date);
-      const key = `${date.getFullYear()}-${date.getMonth()}`;
-      let month = months.find((item) => item.key === key);
-
-      if (!month) {
-        month = {
-          key,
-          label: formatMonthLabel(firstDay.date),
-          weeks: [],
-          total: 0,
-        };
-        months.push(month);
+      const lastMarker = markers[markers.length - 1];
+      if (lastMarker?.key === week.monthKey) {
+        lastMarker.span += 1;
+        lastMarker.total += week.days.reduce((sum, day) => sum + day.contributionCount, 0);
+        return;
       }
 
-      month.weeks.push(week);
-      month.total += week.reduce((sum, day) => sum + day.contributionCount, 0);
+      markers.push({
+        key: week.monthKey,
+        label: formatMonthLabel(firstDay.date),
+        start: index + 1,
+        span: 1,
+        total: week.days.reduce((sum, day) => sum + day.contributionCount, 0),
+      });
     });
 
-    return months;
+    return markers;
   }, [contributionWeeks]);
+
+  const contributionMonthStarts = useMemo(
+    () => new Set(contributionMonthMarkers.map((marker) => marker.start)),
+    [contributionMonthMarkers],
+  );
+
+  const contributionStats = useMemo(() => {
+    const activeDays = contributionDays.filter((day) => day.contributionCount > 0);
+    const maxCount = Math.max(0, ...contributionDays.map((day) => day.contributionCount));
+    const bestDay =
+      contributionDays.find((day) => day.contributionCount === maxCount && maxCount > 0) ?? null;
+
+    return {
+      activeDays: activeDays.length,
+      maxCount,
+      bestDay,
+    };
+  }, [contributionDays]);
 
   if (loading) {
     return (
@@ -373,6 +409,7 @@ export default function GitHubWidget() {
   }
 
   const contributionTotals = data.contributions?.totals;
+  const selectedContributionDay = hoveredDay ?? contributionStats.bestDay;
 
   return (
     <div className="h-full min-h-[28rem] rounded-3xl border border-border bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 p-5 shadow-sm transition-all duration-300 hover:border-zinc-700">
@@ -420,128 +457,143 @@ export default function GitHubWidget() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-5 2xl:grid-cols-[minmax(0,1.35fr)_minmax(28rem,0.65fr)]">
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-4 shadow-inner">
-              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-                    Contribution graph
-                  </p>
-                  <h4 className="mt-1 text-xl font-semibold text-zinc-100">
-                    {contributionTotals
-                      ? `${formatNumber(contributionTotals.commits)} commitów / rok`
-                      : "Wymaga tokena"}
-                  </h4>
-                  <p className="mt-1 text-xs text-zinc-500">
-                    {hoveredDay
-                      ? `${formatContributionLabel(hoveredDay.contributionCount)} · ${fullDateFormat.format(new Date(hoveredDay.date))}`
-                      : "Najedź na kafelek, żeby zobaczyć aktywność dnia."}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {!data.hasToken && (
-                    <div className="rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-[11px] font-medium text-amber-200">
-                      Token
-                    </div>
-                  )}
-                </div>
+        <div className="space-y-5">
+          <div className="rounded-2xl border border-white/10 bg-black/20 p-4 shadow-inner">
+            <div className="mb-5 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                  Contribution graph
+                </p>
+                <h4 className="mt-1 text-xl font-semibold text-zinc-100">
+                  {contributionTotals
+                    ? `${formatNumber(contributionTotals.commits)} commitów / rok`
+                    : "Wymaga tokena"}
+                </h4>
+                <p className="mt-1 text-xs text-zinc-500">
+                  Roczny widok aktywności, podzielony granicami miesięcy.
+                </p>
               </div>
 
-              {contributionDays.length > 0 ? (
-                <div
-                  className="rounded-xl border border-white/5 bg-zinc-950/70 p-4"
-                  onMouseLeave={() => setHoveredDay(null)}
-                >
-                  <div className="mb-4 rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3 text-sm">
-                    <p className="font-medium text-zinc-100">
-                      {hoveredDay
-                        ? formatContributionLabel(hoveredDay.contributionCount)
-                        : "Najedź na dzień"}
-                    </p>
-                    <p className="mt-0.5 text-xs text-zinc-500">
-                      {hoveredDay
-                        ? fullDateFormat.format(new Date(hoveredDay.date))
-                        : "Pokażę dokładną datę i liczbę commitów."}
-                    </p>
-                  </div>
+              <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3">
+                <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                  {selectedContributionDay ? "Wybrany dzień" : "Dzień"}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-zinc-100">
+                  {selectedContributionDay
+                    ? formatContributionLabel(selectedContributionDay.contributionCount)
+                    : "Brak danych"}
+                </p>
+                <p className="mt-0.5 text-xs text-zinc-500">
+                  {selectedContributionDay
+                    ? fullDateFormat.format(new Date(selectedContributionDay.date))
+                    : "Najedź na kratkę, żeby zobaczyć szczegóły."}
+                </p>
+              </div>
+            </div>
 
-                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    {contributionMonths.map((month) => (
-                      <div
-                        key={month.key}
-                        className="rounded-2xl border border-white/5 bg-black/20 p-3"
+            {contributionDays.length > 0 ? (
+              <div
+                className="overflow-x-auto rounded-2xl border border-white/5 bg-zinc-950/70 p-4 pb-3"
+                onMouseLeave={() => setHoveredDay(null)}
+              >
+                <div className="inline-grid min-w-max grid-cols-1 gap-y-2">
+                  <div
+                    className="grid h-5 gap-1 text-[11px] leading-5 text-zinc-500"
+                    style={{
+                      gridTemplateColumns: `repeat(${contributionWeeks.length}, 0.875rem)`,
+                    }}
+                  >
+                    {contributionMonthMarkers.map((marker) => (
+                      <span
+                        key={marker.key}
+                        className="truncate border-l border-white/10 pl-1"
+                        style={{
+                          gridColumn: `${marker.start} / span ${marker.span}`,
+                        }}
+                        title={`${marker.label}: ${formatNumber(marker.total)}`}
                       >
-                        <div className="mb-3 flex items-center justify-between gap-3">
-                          <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                            {month.label}
-                          </p>
-                          <p className="text-[11px] text-zinc-600">
-                            {formatNumber(month.total)}
-                          </p>
-                        </div>
-                        <div className="grid grid-cols-[1.5rem_auto] gap-x-2">
-                          <div className="grid grid-rows-7 gap-1 text-[10px] text-zinc-600">
-                            <span className="h-3" />
-                            <span className="h-3 leading-3">Pn</span>
-                            <span className="h-3" />
-                            <span className="h-3 leading-3">Śr</span>
-                            <span className="h-3" />
-                            <span className="h-3 leading-3">Pt</span>
-                            <span className="h-3" />
-                          </div>
-                          <div className="flex min-w-0 gap-1">
-                            {month.weeks.map((week, weekIndex) => (
-                              <div key={`${month.key}-${weekIndex}`} className="grid grid-rows-7 gap-1">
-                                {week.map((day) => (
-                                  <button
-                                    key={day.date}
-                                    type="button"
-                                    aria-label={`${formatContributionLabel(day.contributionCount)} ${fullDateFormat.format(new Date(day.date))}`}
-                                    onMouseEnter={() => setHoveredDay(day)}
-                                    onFocus={() => setHoveredDay(day)}
-                                    onBlur={() => setHoveredDay(null)}
-                                    className="size-3 rounded-[3px] border border-black/30 outline-none transition-transform hover:scale-125 focus-visible:scale-125 focus-visible:ring-2 focus-visible:ring-emerald-300/70"
-                                    style={{ backgroundColor: contributionColor(day.contributionCount) }}
-                                  />
-                                ))}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
+                        {marker.label}
+                      </span>
                     ))}
                   </div>
 
-                  <div className="mt-4 flex items-center justify-end gap-1 text-[11px] text-zinc-600">
-                      <span>Mniej</span>
-                      {[0, 2, 5, 9, 12].map((count) => (
+                  <div className="flex gap-1">
+                    {contributionWeeks.map((week, weekIndex) => {
+                      const isMonthStart = contributionMonthStarts.has(weekIndex + 1);
+
+                      return (
+                        <div
+                          key={`${week.monthKey}-${weekIndex}`}
+                          className={`grid grid-rows-7 gap-1 ${
+                            isMonthStart
+                              ? "relative before:absolute before:-left-0.5 before:top-0 before:h-full before:w-px before:bg-white/10"
+                              : ""
+                          }`}
+                        >
+                          {week.days.map((day) => (
+                            <button
+                              key={day.date}
+                              type="button"
+                              aria-label={`${formatContributionLabel(day.contributionCount)} ${fullDateFormat.format(new Date(day.date))}`}
+                              onMouseEnter={() => setHoveredDay(day)}
+                              onFocus={() => setHoveredDay(day)}
+                              onBlur={() => setHoveredDay(null)}
+                              className="size-3.5 rounded-[4px] border border-black/30 outline-none transition-transform hover:scale-125 focus-visible:scale-125 focus-visible:ring-2 focus-visible:ring-emerald-300/70"
+                              style={{
+                                backgroundColor: contributionColor(
+                                  day.contributionCount,
+                                  contributionStats.maxCount,
+                                ),
+                              }}
+                            />
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-2 flex items-center justify-end gap-1 text-[11px] text-zinc-600">
+                    <span>Mniej</span>
+                    {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
+                      const count = Math.ceil(contributionStats.maxCount * ratio);
+
+                      return (
                         <span
-                          key={count}
-                          className="size-3 rounded-[3px] border border-black/30"
-                          style={{ backgroundColor: contributionColor(count) }}
+                          key={ratio}
+                          className="size-3.5 rounded-[4px] border border-black/30"
+                          style={{
+                            backgroundColor: contributionColor(
+                              count,
+                              contributionStats.maxCount,
+                            ),
+                          }}
                         />
-                      ))}
-                      <span>Więcej</span>
+                      );
+                    })}
+                    <span>Więcej</span>
                   </div>
                 </div>
-              ) : (
-                <EmptyLine>
-                  {data.contributions?.reason ??
-                    "Dodaj GITHUB_TOKEN, aby pokazać contribution calendar."}
-                </EmptyLine>
-              )}
+              </div>
+            ) : (
+              <EmptyLine>
+                {data.contributions?.reason ??
+                  "Dodaj GITHUB_TOKEN, aby pokazać contribution calendar."}
+              </EmptyLine>
+            )}
 
-              {contributionTotals && (
-                <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  <StatPill label="Commits" value={formatNumber(contributionTotals.commits)} />
-                  <StatPill label="Issues" value={formatNumber(contributionTotals.issues)} />
-                  <StatPill label="PR" value={formatNumber(contributionTotals.pullRequests)} />
-                  <StatPill label="Reviews" value={formatNumber(contributionTotals.reviews)} />
-                </div>
-              )}
-            </div>
+            {contributionTotals && (
+              <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-6">
+                <StatPill label="Commits" value={formatNumber(contributionTotals.commits)} />
+                <StatPill label="Aktywne dni" value={formatNumber(contributionStats.activeDays)} />
+                <StatPill label="Najlepszy dzień" value={formatNumber(contributionStats.maxCount)} />
+                <StatPill label="Issues" value={formatNumber(contributionTotals.issues)} />
+                <StatPill label="PR" value={formatNumber(contributionTotals.pullRequests)} />
+                <StatPill label="Reviews" value={formatNumber(contributionTotals.reviews)} />
+              </div>
+            )}
+          </div>
 
+          <div className="grid grid-cols-1 gap-5 2xl:grid-cols-[minmax(0,1fr)_minmax(28rem,0.75fr)]">
             <div className="rounded-2xl border border-white/5 bg-white/[0.025] p-4">
               <div className="mb-3 flex items-center gap-2">
                 <RadioTower size={16} className="text-zinc-500" />
@@ -575,7 +627,6 @@ export default function GitHubWidget() {
                 )}
               </div>
             </div>
-          </div>
 
           <div className="rounded-2xl border border-white/5 bg-white/[0.025] p-4">
             <div className="mb-4 flex items-start justify-between gap-3">
@@ -756,6 +807,7 @@ export default function GitHubWidget() {
               <EmptyLine>Ustaw `GITHUB_REPOS` albo dodaj publiczne repozytoria.</EmptyLine>
             )}
           </div>
+        </div>
         </div>
 
         {data.errors && data.errors.length > 0 && (
