@@ -3,6 +3,7 @@ import WeatherWidget from "./components/WeatherWidget";
 import CalendarWidget from "./components/CalendarWidget";
 import HabitWidget from "./components/HabitWidget";
 import LolRankWidget from "./components/LolRankWidget";
+import CodexTokensWidget from "./components/CodexTokensWidget";
 
 export default function Home() {
   return (
@@ -22,6 +23,9 @@ export default function Home() {
 
           <CalendarWidget />
           <HabitWidget />
+          <div className="col-span-1 md:col-span-2 lg:col-span-4">
+            <CodexTokensWidget />
+          </div>
         </div>
       </div>
     </main>
