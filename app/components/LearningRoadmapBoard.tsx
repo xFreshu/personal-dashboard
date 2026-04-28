@@ -150,14 +150,14 @@ export default function LearningRoadmapBoard() {
                 Centrum Nauki
               </h1>
               <p className="mt-1 max-w-3xl text-sm text-zinc-400 md:text-base">
-                Cztery sciezki inspirowane roadmap.sh, rozpisane na milestone&apos;y i checklisty z lokalnym
+                Piec sciezek inspirowanych roadmap.sh, rozpisanych na milestone&apos;y i checklisty z lokalnym
                 sledzeniem postepu.
               </p>
             </div>
           </div>
         </header>
 
-        <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
           {learningTracks.map((track) => {
             const Icon = track.icon;
             const trackProgress = getTrackProgress(track, progress);

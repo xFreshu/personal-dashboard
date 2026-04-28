@@ -15,6 +15,7 @@ describe("LearningRoadmapBoard", () => {
 
     expect(screen.getByRole("heading", { name: "Centrum Nauki" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /JavaScript Developer/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Git Praktyczna sciezka Gita/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Skad czerpac wiedze" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Core JavaScript od podstaw/i })).toHaveAttribute(
       "href",
@@ -24,6 +25,25 @@ describe("LearningRoadmapBoard", () => {
     expect(
       screen.getByRole("button", {
         name: /Static hosting, SSR, serverless i kontenery - kiedy co wybrac/i,
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("switches to the Git learning track", async () => {
+    const user = userEvent.setup();
+
+    render(<LearningRoadmapBoard />);
+
+    await user.click(screen.getByRole("button", { name: /Git Praktyczna sciezka Gita/i }));
+
+    expect(screen.getByRole("heading", { name: "Git Foundations" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Pro Git/i })).toHaveAttribute(
+      "href",
+      "https://git-scm.com/book/en/v2",
+    );
+    expect(
+      screen.getByRole("button", {
+        name: /Working tree, staging area, commits i historia zmian/i,
       }),
     ).toBeInTheDocument();
   });
