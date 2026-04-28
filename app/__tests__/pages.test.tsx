@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import CodexPage from "../codex/page";
 import GitHubPage from "../github/page";
+import LeaguePage from "../league/page";
 import LearningPage from "../learning/page";
 import RootLayout, { metadata } from "../layout";
 import Home from "../page";
@@ -40,6 +41,10 @@ vi.mock("../components/HabitWidget", () => ({
 
 vi.mock("../components/LolRankWidget", () => ({
   default: () => <div>LoL widget</div>,
+}));
+
+vi.mock("../components/LeagueDashboard", () => ({
+  default: () => <div>League dashboard</div>,
 }));
 
 vi.mock("../components/CodexTokensWidget", () => ({
@@ -84,6 +89,9 @@ describe("app pages and layout", () => {
 
     rerender(<LearningPage />);
     expect(screen.getByText("Learning roadmap board")).toBeInTheDocument();
+
+    rerender(<LeaguePage />);
+    expect(screen.getByText("League dashboard")).toBeInTheDocument();
   });
 
   it("wraps the app with auth provider and sidebar", () => {

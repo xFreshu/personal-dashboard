@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Code2,
+  Gamepad2,
   GraduationCap,
   LayoutDashboard,
 } from "lucide-react";
@@ -26,6 +27,11 @@ export default function Sidebar() {
       name: "Nauka",
       href: "/learning",
       icon: GraduationCap,
+    },
+    {
+      name: "League",
+      href: "/league",
+      icon: Gamepad2,
     },
     {
       name: "GitHub",

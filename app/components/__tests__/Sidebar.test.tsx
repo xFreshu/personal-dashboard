@@ -45,6 +45,7 @@ describe("Sidebar", () => {
     expect(aside).toHaveClass("w-72");
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
     expect(screen.getByText("Nauka")).toBeInTheDocument();
+    expect(screen.getByText("League")).toBeInTheDocument();
   });
 
   it("closes with the mobile backdrop and after a mobile link click", async () => {

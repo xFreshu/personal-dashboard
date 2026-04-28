@@ -493,6 +493,344 @@ describe("API routes", () => {
     });
   });
 
+  it("returns LoL match history with account summary and external links", async () => {
+    const { GET } = await import("../lol/matches/route");
+    process.env.RIOT_API_KEY = "riot-key";
+    process.env.LOL_ACCOUNTS = "TestPlayer|EUW|EUW";
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ puuid: "puuid-1" }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ["EUW1_1", "EUW1_2"],
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          metadata: { matchId: "EUW1_1" },
+          info: {
+            gameCreation: 1_776_000_000_000,
+            gameDuration: 1800,
+            gameMode: "CLASSIC",
+            queueId: 420,
+            participants: [
+              {
+                puuid: "puuid-1",
+                riotIdGameName: "TestPlayer",
+                riotIdTagline: "EUW",
+                teamId: 100,
+                championName: "Ahri",
+                champLevel: 16,
+                kills: 8,
+                deaths: 2,
+                assists: 10,
+                win: true,
+                totalDamageDealtToChampions: 22000,
+                totalDamageTaken: 14000,
+                damageSelfMitigated: 5000,
+                damageDealtToObjectives: 1200,
+                damageDealtToTurrets: 800,
+                totalMinionsKilled: 190,
+                neutralMinionsKilled: 10,
+                goldEarned: 13000,
+                visionScore: 24,
+                wardsPlaced: 9,
+                wardsKilled: 2,
+                detectorWardsPlaced: 1,
+                visionWardsBoughtInGame: 1,
+                totalHeal: 1200,
+                timeCCingOthers: 18,
+                doubleKills: 1,
+                tripleKills: 0,
+                quadraKills: 0,
+                pentaKills: 0,
+                individualPosition: "MIDDLE",
+                teamPosition: "MIDDLE",
+              },
+              {
+                puuid: "puuid-2",
+                riotIdGameName: "Ally",
+                riotIdTagline: "EUW",
+                teamId: 100,
+                championName: "Garen",
+                champLevel: 17,
+                kills: 16,
+                deaths: 3,
+                assists: 10,
+                win: true,
+                totalDamageDealtToChampions: 33000,
+                totalDamageTaken: 30000,
+                damageSelfMitigated: 12000,
+                damageDealtToObjectives: 4000,
+                damageDealtToTurrets: 2000,
+                totalMinionsKilled: 220,
+                neutralMinionsKilled: 0,
+                goldEarned: 16000,
+                visionScore: 14,
+                wardsPlaced: 8,
+                wardsKilled: 1,
+                detectorWardsPlaced: 1,
+                visionWardsBoughtInGame: 1,
+                totalHeal: 2000,
+                timeCCingOthers: 12,
+                doubleKills: 0,
+                tripleKills: 0,
+                quadraKills: 0,
+                pentaKills: 0,
+                individualPosition: "TOP",
+                teamPosition: "TOP",
+              },
+              {
+                puuid: "puuid-3",
+                riotIdGameName: "EnemyMid",
+                riotIdTagline: "EUW",
+                teamId: 200,
+                championName: "Zed",
+                champLevel: 14,
+                kills: 6,
+                deaths: 7,
+                assists: 3,
+                win: false,
+                totalDamageDealtToChampions: 18000,
+                totalDamageTaken: 15000,
+                damageSelfMitigated: 3000,
+                damageDealtToObjectives: 600,
+                damageDealtToTurrets: 250,
+                totalMinionsKilled: 175,
+                neutralMinionsKilled: 5,
+                goldEarned: 11100,
+                visionScore: 12,
+                wardsPlaced: 8,
+                wardsKilled: 2,
+                detectorWardsPlaced: 1,
+                visionWardsBoughtInGame: 1,
+                totalHeal: 500,
+                timeCCingOthers: 6,
+                doubleKills: 0,
+                tripleKills: 0,
+                quadraKills: 0,
+                pentaKills: 0,
+                individualPosition: "MIDDLE",
+                teamPosition: "MIDDLE",
+              },
+              {
+                puuid: "puuid-4",
+                riotIdGameName: "Enemy",
+                riotIdTagline: "EUW",
+                teamId: 200,
+                championName: "Lux",
+                champLevel: 12,
+                kills: 1,
+                deaths: 8,
+                assists: 7,
+                win: false,
+                totalDamageDealtToChampions: 12000,
+                totalDamageTaken: 16000,
+                damageSelfMitigated: 1000,
+                damageDealtToObjectives: 100,
+                damageDealtToTurrets: 50,
+                totalMinionsKilled: 30,
+                neutralMinionsKilled: 0,
+                goldEarned: 8000,
+                visionScore: 30,
+                wardsPlaced: 20,
+                wardsKilled: 5,
+                detectorWardsPlaced: 4,
+                visionWardsBoughtInGame: 4,
+                totalHeal: 3000,
+                timeCCingOthers: 20,
+                doubleKills: 0,
+                tripleKills: 0,
+                quadraKills: 0,
+                pentaKills: 0,
+                individualPosition: "UTILITY",
+                teamPosition: "UTILITY",
+              },
+            ],
+            teams: [
+              {
+                teamId: 100,
+                win: true,
+                objectives: {
+                  baron: { kills: 1 },
+                  dragon: { kills: 3 },
+                  horde: { kills: 4 },
+                  inhibitor: { kills: 2 },
+                  riftHerald: { kills: 1 },
+                  tower: { kills: 8 },
+                },
+              },
+              {
+                teamId: 200,
+                win: false,
+                objectives: {
+                  baron: { kills: 0 },
+                  dragon: { kills: 1 },
+                  horde: { kills: 2 },
+                  inhibitor: { kills: 0 },
+                  riftHerald: { kills: 0 },
+                  tower: { kills: 3 },
+                },
+              },
+            ],
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          metadata: { matchId: "EUW1_2" },
+          info: {
+            gameCreation: 1_775_990_000_000,
+            gameDuration: 1200,
+            gameMode: "CLASSIC",
+            queueId: 440,
+            participants: [
+              {
+                puuid: "puuid-1",
+                teamId: 100,
+                championName: "Lux",
+                champLevel: 12,
+                kills: 1,
+                deaths: 4,
+                assists: 8,
+                win: false,
+                totalDamageDealtToChampions: 12000,
+                totalDamageTaken: 9000,
+                damageSelfMitigated: 2000,
+                damageDealtToObjectives: 400,
+                damageDealtToTurrets: 100,
+                totalMinionsKilled: 40,
+                neutralMinionsKilled: 0,
+                goldEarned: 8000,
+                visionScore: 38,
+                wardsPlaced: 24,
+                wardsKilled: 7,
+                detectorWardsPlaced: 5,
+                visionWardsBoughtInGame: 5,
+                totalHeal: 3000,
+                timeCCingOthers: 25,
+                doubleKills: 0,
+                tripleKills: 0,
+                quadraKills: 0,
+                pentaKills: 0,
+                individualPosition: "UTILITY",
+                teamPosition: "UTILITY",
+              },
+            ],
+          },
+        }),
+      } as Response);
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.accounts[0].links).toMatchObject({
+      overview: "https://dpm.lol/TestPlayer-EUW",
+      live: "https://dpm.lol/TestPlayer-EUW/live",
+      opgg: "https://op.gg/lol/summoners/euw/TestPlayer-EUW",
+    });
+    expect(body.accounts[0].summary).toMatchObject({
+      games: 2,
+      wins: 1,
+      losses: 1,
+      winRate: 50,
+      favoriteChampion: "Ahri",
+      mainPosition: "Mid",
+    });
+    expect(body.accounts[0].matches[0]).toMatchObject({
+      matchId: "EUW1_1",
+      queueName: "Solo/Duo",
+      championName: "Ahri",
+      championIconUrl: "https://ddragon.leagueoflegends.com/cdn/img/champion/tiles/Ahri_0.jpg",
+      kda: 9,
+      csPerMinute: 6.7,
+      laneOpponent: {
+        riotId: "EnemyMid#EUW",
+        dpmUrl: "https://dpm.lol/EnemyMid-EUW",
+        championName: "Zed",
+        position: "Mid",
+      },
+      details: {
+        killParticipation: 75,
+        damageShare: 40,
+        largestMultiKill: "Double",
+      },
+      teams: [
+        {
+          name: "Twoja drużyna",
+          objectives: {
+            dragons: 3,
+            towers: 8,
+          },
+        },
+        {
+          name: "Rywal",
+          participants: expect.arrayContaining([
+            expect.objectContaining({
+              riotId: "EnemyMid#EUW",
+              dpmUrl: "https://dpm.lol/EnemyMid-EUW",
+            }),
+          ]),
+        },
+      ],
+    });
+    expect(body.accounts[0].pagination).toMatchObject({
+      start: 0,
+      count: 8,
+      nextStart: 2,
+      hasMore: false,
+    });
+  });
+
+  it("reports missing LoL match history configuration", async () => {
+    const { GET } = await import("../lol/matches/route");
+    delete process.env.RIOT_API_KEY;
+    delete process.env.LOL_ACCOUNTS;
+
+    const response = await GET();
+
+    expect(await response.json()).toEqual({
+      configured: false,
+      missing: ["RIOT_API_KEY", "LOL_ACCOUNTS"],
+    });
+  });
+
+  it("returns a visible LoL match history error when Riot rate limits match details", async () => {
+    const { GET } = await import("../lol/matches/route");
+    process.env.RIOT_API_KEY = "riot-key";
+    process.env.LOL_ACCOUNTS = "RateLimited|EUW|EUW";
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ puuid: "puuid-rate-limit" }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ["EUW1_429"],
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        json: async () => ({}),
+      } as Response);
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.accounts[0]).toMatchObject({
+      error: "Riot rate limit przy pobieraniu szczegółów meczu (429).",
+      summary: {
+        games: 0,
+      },
+      matches: [],
+    });
+  });
+
   it("returns a GitHub dashboard from REST data without a token", async () => {
     const { GET } = await import("../github/route");
     process.env.GITHUB_USERNAME = "lukasz";

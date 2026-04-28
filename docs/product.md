@@ -26,6 +26,8 @@ projekt powinien byc latwy do zrozumienia, testowania i rozbudowy.
 Obecne MVP sklada sie z:
 
 - strony glownej `/` z widgetami czasu, pogody, kalendarza, nawykow i LoL,
+- strony `/league` z historia meczow LoL, forma kont i linkami do zewnetrznych
+  profili,
 - strony `/learning` z tablica roadmap nauki,
 - strony `/github` z widgetem GitHub,
 - strony `/codex` ze statusem konta i zuzyciem tokenow Codexa,
@@ -52,4 +54,3 @@ trafic do dashboardu tylko wtedy, gdy:
   zewnetrznych.
 - UI moze miec charakter osobisty, ale nie powinien przeszkadzac w pracy.
 - Polskie komunikaty sa preferowane w miejscach, ktore czyta wlasciciel.
-

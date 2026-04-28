@@ -52,6 +52,10 @@ albo wyniesione dopiero wtedy, gdy sa realnie wspoldzielone.
 ### League of Legends
 
 - `GET /api/lol/rank` korzysta z Riot API.
+- `GET /api/lol/matches` korzysta z Account V1 i Match V5, pobiera match ID po
+  PUUID, a nastepnie szczegoly meczow do widoku `/league`. Endpoint obsluguje
+  parametry `account`, `start` i `count`, zeby UI moglo dociagac kolejne mecze
+  przy scrollowaniu.
 - Konta sa konfigurowane przez zmienna srodowiskowa w formacie
   `gameName|tagLine|platform`, rozdzielane srednikami.
 - Route handler normalizuje platformy i dobiera regional route.
@@ -61,6 +65,10 @@ albo wyniesione dopiero wtedy, gdy sa realnie wspoldzielone.
   status nieznany, zeby nie ukrywac danych rankingowych.
 - Widget linkuje do DPM.lol przez `https://dpm.lol/{gameName}-{tagLine}` oraz
   podstrone `/live`, ktora pokazuje live game, gdy gracz jest w meczu.
+- Strona `/league` dodaje linki do DPM.lol oraz OP.GG. Link OP.GG jest budowany
+  w formacie `https://op.gg/lol/summoners/{region}/{gameName}-{tagLine}`.
+- Ikony championow w historii meczow pochodza z Data Dragon:
+  `https://ddragon.leagueoflegends.com/cdn/img/champion/tiles/{champion}_0.jpg`.
 
 ### Codex
 
