@@ -11,6 +11,7 @@ import {
   ExternalLink,
   Flame,
   Gamepad2,
+  Radio,
   RefreshCw,
   Swords,
   Target,
@@ -103,6 +104,13 @@ type Match = {
   }>;
 };
 
+type PlayerRank = {
+  queueType: string;
+  tier: string;
+  rank: string;
+  leaguePoints: number;
+} | null | { error: string };
+
 type AccountMatches = {
   accountIndex?: number;
   profile: {
@@ -148,6 +156,122 @@ type LeagueMatchesResponse =
       accounts: AccountMatches[];
     };
 
+type PlayerRanksResponse =
+  | {
+      configured: false;
+      missing: string[];
+    }
+  | {
+      configured: true;
+      ranks: Record<string, PlayerRank>;
+    };
+
+type RankedQueue = {
+  queueType: string;
+  tier: string;
+  rank: string;
+  leaguePoints: number;
+  wins: number;
+  losses: number;
+  winRate: number;
+};
+
+type LeagueRankOverviewResponse =
+  | {
+      configured: false;
+      missing: string[];
+    }
+  | {
+      configured: true;
+      accounts: Array<{
+        profile: {
+          gameName: string;
+          tagLine: string;
+          platform: string;
+        };
+        error: string | null;
+        primaryQueue: RankedQueue | null;
+        soloQueue: RankedQueue | null;
+        flexQueue: RankedQueue | null;
+        liveGame?:
+          | {
+              status: "active";
+              gameId: number;
+              gameMode: string;
+              gameType: string;
+              gameStartTime: number;
+              queueId: number;
+              participantCount: number;
+            }
+          | {
+              status: "inactive";
+            }
+          | {
+              status: "unknown";
+              error: string;
+            };
+      }>;
+    };
+
+type LiveGameResponse =
+  | {
+      configured: false;
+      missing: string[];
+    }
+  | {
+      configured: true;
+      status: "inactive";
+    }
+  | {
+      configured: true;
+      status: "unknown";
+      error: string;
+    }
+  | {
+      configured: true;
+      status: "active";
+      gameId: number;
+      gameMode: string;
+      gameType: string;
+      gameStartTime: number;
+      queueId: number;
+      queueName: string;
+      participantCount: number;
+      links: {
+        overview: string;
+        champions: string;
+        live: string;
+      };
+      teams: Array<{
+        teamId: number;
+        label: string;
+        participants: Array<{
+          summonerId: string;
+          summonerName: string;
+          championId: number;
+          championName: string;
+          championIconUrl: string;
+          championTags: string[];
+          spell1Id: number;
+          spell2Id: number;
+          teamId: number;
+          bot: boolean;
+          isCurrentPlayer: boolean;
+          rank: PlayerRank;
+          rankLabel: string;
+          rankScore: number;
+        }>;
+        analysis: {
+          highestRank: string;
+          knownRanks: number;
+          unrankedCount: number;
+          frontlineCount: number;
+          backlineCount: number;
+          composition: string[];
+        };
+      }>;
+    };
+
 const MATCH_PAGE_SIZE = 8;
 
 function formatDuration(seconds: number) {
@@ -157,7 +281,7 @@ function formatDuration(seconds: number) {
 }
 
 function formatDate(timestamp: number) {
-  return new Intl.DateTimeFormat("pl-PL", {
+  return new Intl.DateTimeFormat("en-GB", {
     day: "2-digit",
     month: "short",
     hour: "2-digit",
@@ -165,8 +289,13 @@ function formatDate(timestamp: number) {
   }).format(new Date(timestamp));
 }
 
+function formatLiveElapsed(startTimestamp: number) {
+  const elapsedSeconds = Math.max(0, Math.floor((Date.now() - startTimestamp) / 1000));
+  return formatDuration(elapsedSeconds);
+}
+
 function formatNumber(value: number) {
-  return new Intl.NumberFormat("pl-PL").format(value);
+  return new Intl.NumberFormat("en-GB").format(value);
 }
 
 function kdaLabel(match: Match) {
@@ -176,6 +305,30 @@ function kdaLabel(match: Match) {
 function round(value: number, precision = 1) {
   const factor = 10 ** precision;
   return Math.round(value * factor) / factor;
+}
+
+function formatRank(rank: PlayerRank | undefined) {
+  if (rank === undefined) {
+    return "Loading rank...";
+  }
+
+  if (rank && "error" in rank) {
+    return rank.error;
+  }
+
+  if (!rank) {
+    return "Unranked";
+  }
+
+  return `${rank.tier} ${rank.rank} · ${rank.leaguePoints} LP`;
+}
+
+function formatQueueRank(queue: RankedQueue | null | undefined) {
+  if (!queue) {
+    return "Unranked";
+  }
+
+  return `${queue.tier} ${queue.rank} · ${queue.leaguePoints} LP`;
 }
 
 function getMode(values: string[]) {
@@ -302,7 +455,61 @@ export default function LeagueDashboard() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null);
+  const [participantRanks, setParticipantRanks] = useState<Record<string, PlayerRank>>({});
+  const [accountRanks, setAccountRanks] = useState<
+    Record<
+      string,
+      {
+        primaryQueue: RankedQueue | null;
+        error: string | null;
+        liveGame?:
+          | {
+              status: "active";
+              gameId: number;
+              gameMode: string;
+              gameType: string;
+              gameStartTime: number;
+              queueId: number;
+              participantCount: number;
+            }
+          | {
+              status: "inactive";
+            }
+          | {
+              status: "unknown";
+              error: string;
+            };
+      }
+    >
+  >({});
+  const [liveScouting, setLiveScouting] = useState<Record<number, LiveGameResponse>>({});
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  const fetchAccountRanks = useCallback(async () => {
+    try {
+      const response = await fetch("/api/lol/rank", { cache: "no-store" });
+      const payload = (await response.json()) as LeagueRankOverviewResponse;
+
+      if (!response.ok || !payload.configured) {
+        return;
+      }
+
+      setAccountRanks(
+        Object.fromEntries(
+          payload.accounts.map((account) => [
+            `${account.profile.gameName}#${account.profile.tagLine}@${account.profile.platform}`,
+            {
+              primaryQueue: account.primaryQueue,
+              error: account.error,
+              liveGame: account.liveGame,
+            },
+          ]),
+        ),
+      );
+    } catch {
+      setAccountRanks({});
+    }
+  }, []);
 
   const fetchMatches = useCallback(
     async ({
@@ -400,6 +607,17 @@ export default function LeagueDashboard() {
     };
   }, [fetchMatches]);
 
+  useEffect(() => {
+    void fetchAccountRanks();
+    const interval = setInterval(() => {
+      void fetchAccountRanks();
+    }, 5 * 60 * 1000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [fetchAccountRanks]);
+
   const accountCount = data?.configured ? data.accounts.length : 0;
   const activeAccount = data?.configured ? data.accounts[activeIndex] : null;
   const activeSummary = activeAccount
@@ -456,6 +674,127 @@ export default function LeagueDashboard() {
     return () => observer.disconnect();
   }, [activeAccount?.pagination.hasMore, activeAccount?.pagination.nextStart, loadMoreMatches, loadingMore]);
 
+  useEffect(() => {
+    if (!activeAccount || !expandedMatchId) {
+      return;
+    }
+
+    const expandedMatch = activeAccount.matches.find((match) => match.matchId === expandedMatchId);
+    if (!expandedMatch) {
+      return;
+    }
+
+    const platform = activeAccount.profile.platform;
+    const participants = expandedMatch.teams.flatMap((team) => team.participants);
+    const missingParticipants = participants.filter(
+      (participant) => participantRanks[participant.puuid] === undefined,
+    );
+
+    if (missingParticipants.length === 0) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function fetchParticipantRanks() {
+      try {
+        const response = await fetch("/api/lol/player-ranks", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            platform,
+            participants: missingParticipants.map((participant) => ({
+              puuid: participant.puuid,
+            })),
+          }),
+        });
+
+        const payload = (await response.json()) as PlayerRanksResponse | { error?: string };
+
+        if (!response.ok || !("configured" in payload) || !payload.configured) {
+          if (!cancelled) {
+            setParticipantRanks((current) => ({
+              ...current,
+              ...Object.fromEntries(missingParticipants.map((participant) => [participant.puuid, null])),
+            }));
+          }
+
+          return;
+        }
+
+        if (!cancelled) {
+          setParticipantRanks((current) => ({
+            ...current,
+            ...payload.ranks,
+          }));
+        }
+      } catch {
+        if (!cancelled) {
+          setParticipantRanks((current) => ({
+            ...current,
+            ...Object.fromEntries(missingParticipants.map((participant) => [participant.puuid, null])),
+          }));
+        }
+      }
+    }
+
+    void fetchParticipantRanks();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeAccount, expandedMatchId, participantRanks]);
+
+  useEffect(() => {
+    const rankInfo =
+      activeAccount
+        ? accountRanks[
+            `${activeAccount.profile.gameName}#${activeAccount.profile.tagLine}@${activeAccount.profile.platform}`
+          ]
+        : null;
+
+    if (!activeAccount || rankInfo?.liveGame?.status !== "active" || liveScouting[activeIndex]) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function fetchLiveScouting() {
+      try {
+        const response = await fetch(`/api/lol/live-game?account=${activeIndex}`, {
+          cache: "no-store",
+        });
+        const payload = (await response.json()) as LiveGameResponse;
+
+        if (!cancelled) {
+          setLiveScouting((current) => ({
+            ...current,
+            [activeIndex]: payload,
+          }));
+        }
+      } catch {
+        if (!cancelled) {
+          setLiveScouting((current) => ({
+            ...current,
+            [activeIndex]: {
+              configured: true,
+              status: "unknown",
+              error: "Live scouting is currently unavailable.",
+            },
+          }));
+        }
+      }
+    }
+
+    void fetchLiveScouting();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [accountRanks, activeAccount, activeIndex, liveScouting]);
+
   if (loading) {
     return <LoadingState />;
   }
@@ -468,9 +807,9 @@ export default function LeagueDashboard() {
     return (
       <section className="rounded-3xl border border-border bg-card p-5">
         <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">League of Legends</p>
-        <h1 className="mt-2 text-2xl font-semibold text-zinc-100">Brak konfiguracji Riot</h1>
+        <h1 className="mt-2 text-2xl font-semibold text-zinc-100">Riot configuration missing</h1>
         <p className="mt-3 text-sm text-zinc-500">
-          Uzupełnij zmienne: {data.missing.join(", ")}.
+          Missing variables: {data.missing.join(", ")}.
         </p>
       </section>
     );
@@ -479,12 +818,16 @@ export default function LeagueDashboard() {
   if (!activeAccount) {
     return (
       <section className="rounded-3xl border border-border bg-card p-5 text-zinc-500">
-        Brak kont League do wyświetlenia.
+        No League accounts available.
       </section>
     );
   }
 
   const riotId = `${activeAccount.profile.gameName}#${activeAccount.profile.tagLine}`;
+  const activeAccountRank =
+    accountRanks[`${activeAccount.profile.gameName}#${activeAccount.profile.tagLine}@${activeAccount.profile.platform}`];
+  const liveStatus = activeAccountRank?.liveGame;
+  const activeLiveScouting = liveScouting[activeIndex];
   const formTone = (activeSummary?.winRate ?? 0) >= 50 ? "text-emerald-300" : "text-rose-300";
 
   return (
@@ -499,22 +842,33 @@ export default function LeagueDashboard() {
               {riotId}
             </h1>
             <p className="mt-2 text-sm text-zinc-500">
-              Historia ostatnich {activeSummary?.games ?? 0} gier · auto odświeżanie co 5 min
+              Last {activeSummary?.games ?? 0} games · auto refresh every 5 min
+            </p>
+            <p className="mt-2 text-sm text-zinc-300">
+              Account rank:{" "}
+              <span className="font-medium text-zinc-100">
+                {activeAccountRank?.error
+                  ? activeAccountRank.error
+                  : formatQueueRank(activeAccountRank?.primaryQueue)}
+              </span>
             </p>
           </div>
 
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => void fetchMatches()}
+              onClick={() => {
+                void fetchMatches();
+                void fetchAccountRanks();
+              }}
               disabled={refreshing}
               className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-zinc-300 transition-colors hover:bg-white/10 hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <RefreshCw className={`size-3.5 ${refreshing ? "animate-spin" : ""}`} />
-              Odśwież
+              Refresh
             </button>
             <ExternalButton href={activeAccount.links.overview}>DPM</ExternalButton>
-            <ExternalButton href={activeAccount.links.champions}>Championy DPM</ExternalButton>
+            <ExternalButton href={activeAccount.links.champions}>Champion DPM</ExternalButton>
             <ExternalButton href={activeAccount.links.live}>Live DPM</ExternalButton>
             <ExternalButton href={activeAccount.links.opgg}>OP.GG</ExternalButton>
           </div>
@@ -522,20 +876,28 @@ export default function LeagueDashboard() {
 
         {accountCount > 1 && (
           <div className="mt-5 flex flex-wrap gap-2">
-            {data.accounts.map((account, index) => (
-              <button
-                key={`${account.profile.gameName}-${account.profile.tagLine}-${account.profile.platform}`}
-                type="button"
-                onClick={() => setActiveIndex(index)}
-                className={`rounded-full border px-3 py-2 text-xs font-medium transition-colors ${
-                  index === activeIndex
-                    ? "border-indigo-400/40 bg-indigo-500/15 text-indigo-200"
-                    : "border-white/10 bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-100"
-                }`}
-              >
-                {account.profile.gameName}#{account.profile.tagLine}
-              </button>
-            ))}
+            {data.accounts.map((account, index) => {
+              const rankInfo =
+                accountRanks[`${account.profile.gameName}#${account.profile.tagLine}@${account.profile.platform}`];
+
+              return (
+                <button
+                  key={`${account.profile.gameName}-${account.profile.tagLine}-${account.profile.platform}`}
+                  type="button"
+                  onClick={() => setActiveIndex(index)}
+                  className={`rounded-2xl border px-3 py-2 text-left text-xs font-medium transition-colors ${
+                    index === activeIndex
+                      ? "border-indigo-400/40 bg-indigo-500/15 text-indigo-200"
+                      : "border-white/10 bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-100"
+                  }`}
+                >
+                  <span className="block">{account.profile.gameName}#{account.profile.tagLine}</span>
+                  <span className="mt-1 block text-[11px] font-normal text-zinc-500">
+                    {rankInfo?.error ? rankInfo.error : formatQueueRank(rankInfo?.primaryQueue)}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         )}
 
@@ -544,7 +906,7 @@ export default function LeagueDashboard() {
             <div className="flex gap-3">
               <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-300" />
               <div>
-                <p className="font-semibold">Nie udało się pobrać świeżej historii.</p>
+                <p className="font-semibold">Could not fetch fresh match history.</p>
                 <p className="mt-1 text-amber-100/75">{activeAccount.error}</p>
               </div>
             </div>
@@ -554,7 +916,7 @@ export default function LeagueDashboard() {
         <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <StatTile
             icon={Trophy}
-            label="Forma"
+            label="Record"
             value={`${activeSummary?.wins ?? 0}W-${activeSummary?.losses ?? 0}L`}
             tone={formTone}
           />
@@ -566,7 +928,7 @@ export default function LeagueDashboard() {
           />
           <StatTile
             icon={Target}
-            label="Śr. KDA"
+            label="Avg KDA"
             value={(activeSummary?.avgKda ?? 0).toFixed(2)}
           />
           <StatTile
@@ -577,6 +939,117 @@ export default function LeagueDashboard() {
         </div>
       </section>
 
+      {liveStatus?.status === "active" && (
+        <section className="rounded-3xl border border-emerald-400/15 bg-emerald-500/[0.05] p-5 shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <Radio className="size-4 text-emerald-300" />
+                <p className="text-xs font-medium uppercase tracking-wider text-emerald-200">
+                  Live scouting
+                </p>
+              </div>
+              <h2 className="mt-2 text-2xl font-semibold text-zinc-100">In game right now</h2>
+              <p className="mt-2 text-sm text-zinc-300">
+                {activeLiveScouting?.configured && activeLiveScouting.status === "active"
+                  ? activeLiveScouting.queueName
+                  : liveStatus.gameMode}{" "}
+                · {liveStatus.participantCount} players · {formatLiveElapsed(liveStatus.gameStartTime)} elapsed
+              </p>
+            </div>
+
+            {activeLiveScouting?.configured && activeLiveScouting.status === "active" ? (
+              <div className="flex flex-wrap gap-2">
+                <ExternalButton href={activeLiveScouting.links.live}>Open Live DPM</ExternalButton>
+                <ExternalButton href={activeLiveScouting.links.overview}>Open DPM</ExternalButton>
+              </div>
+            ) : null}
+          </div>
+
+          {activeLiveScouting?.configured && activeLiveScouting.status === "unknown" ? (
+            <div className="mt-4 rounded-2xl border border-amber-400/20 bg-amber-500/10 p-4 text-sm text-amber-100">
+              {activeLiveScouting.error}
+            </div>
+          ) : null}
+
+          {activeLiveScouting?.configured && activeLiveScouting.status === "active" ? (
+            <div className="mt-5 grid gap-4 xl:grid-cols-2">
+              {activeLiveScouting.teams.map((team) => (
+                <div
+                  key={`${activeLiveScouting.gameId}-${team.teamId}`}
+                  className={`rounded-3xl border p-4 ${
+                    team.label === "Your Team"
+                      ? "border-emerald-400/15 bg-emerald-500/[0.06]"
+                      : "border-rose-400/15 bg-rose-500/[0.06]"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-lg font-semibold text-zinc-100">{team.label}</p>
+                      <p className="mt-1 text-xs text-zinc-500">
+                        Highest rank: {team.analysis.highestRank}
+                      </p>
+                    </div>
+                    <div className="text-right text-xs text-zinc-400">
+                      <p>{team.analysis.knownRanks}/5 ranked known</p>
+                      <p>{team.analysis.unrankedCount} unranked</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                    <StatPill label="Frontline" value={String(team.analysis.frontlineCount)} />
+                    <StatPill label="Backline" value={String(team.analysis.backlineCount)} />
+                    <StatPill label="Tracked ranks" value={String(team.analysis.knownRanks)} />
+                    <StatPill
+                      label="Comp"
+                      value={team.analysis.composition[0] ?? "Mixed"}
+                    />
+                  </div>
+
+                  <div className="mt-4 space-y-2">
+                    {team.participants.map((participant) => (
+                      <div
+                        key={participant.summonerId}
+                        className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-white/10 p-3 ${
+                          participant.isCurrentPlayer
+                            ? "bg-indigo-500/15 ring-1 ring-indigo-400/30"
+                            : "bg-black/10"
+                        }`}
+                      >
+                        <img
+                          src={participant.championIconUrl}
+                          alt=""
+                          className="size-10 rounded-xl border border-white/10 object-cover"
+                          loading="lazy"
+                        />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-zinc-100">
+                            {participant.summonerName}
+                          </p>
+                          <p className="text-xs text-zinc-500">
+                            {participant.championName}
+                            {participant.bot ? " · Bot" : ""}
+                          </p>
+                          <p className="text-xs text-zinc-400">{formatRank(participant.rank)}</p>
+                        </div>
+                        <div className="text-right text-[11px] text-zinc-500">
+                          {participant.championTags.slice(0, 2).join(" · ") || "No tags"}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : activeLiveScouting === undefined ? (
+            <div className="mt-5 grid gap-4 xl:grid-cols-2">
+              <Skeleton className="h-72 rounded-3xl" />
+              <Skeleton className="h-72 rounded-3xl" />
+            </div>
+          ) : null}
+        </section>
+      )}
+
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(18rem,0.8fr)]">
         <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">
           <div className="mb-5 flex items-center justify-between gap-3">
@@ -584,14 +1057,14 @@ export default function LeagueDashboard() {
               <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
                 Match history
               </p>
-              <h2 className="mt-1 text-xl font-semibold text-zinc-100">Ostatnie gry</h2>
+              <h2 className="mt-1 text-xl font-semibold text-zinc-100">Recent games</h2>
             </div>
             <Gamepad2 className="size-5 text-zinc-500" />
           </div>
 
           {activeAccount.matches.length === 0 ? (
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-sm text-zinc-500">
-              Brak meczów do pokazania.
+              No matches to display.
             </div>
           ) : (
             <div className="space-y-3">
@@ -622,7 +1095,7 @@ export default function LeagueDashboard() {
                           }`}
                         />
                         <p className={`text-sm font-semibold ${match.win ? "text-emerald-200" : "text-rose-200"}`}>
-                          {match.win ? "Wygrana" : "Porażka"}
+                          {match.win ? "Win" : "Loss"}
                         </p>
                       </div>
                       <p className="mt-1 text-xs text-zinc-500">
@@ -733,7 +1206,7 @@ export default function LeagueDashboard() {
                           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                             <div>
                               <p className="text-xs font-medium uppercase tracking-[0.18em] text-indigo-200/75">
-                                Matchup na linii
+                                Lane matchup
                               </p>
                               <p className="mt-1 text-sm text-zinc-300">
                                 {match.position}: {match.championName} vs {match.laneOpponent.championName}
@@ -794,7 +1267,9 @@ export default function LeagueDashboard() {
                           >
                             <div className="mb-3 flex items-center justify-between gap-3">
                               <div>
-                                <p className="text-sm font-semibold text-zinc-100">{team.name}</p>
+                                <p className="text-sm font-semibold text-zinc-100">
+                                  {team.name === "Twoja drużyna" ? "Your Team" : "Enemy Team"}
+                                </p>
                                 <p className="text-xs text-zinc-500">
                                   {team.kills}/{team.deaths}/{team.assists} · {formatNumber(team.gold)} gold
                                 </p>
@@ -806,22 +1281,22 @@ export default function LeagueDashboard() {
 
                             <div className="mb-3 grid grid-cols-2 gap-2 xl:grid-cols-3">
                               <ObjectivePill
-                                label="Wieże"
+                                label="Towers"
                                 value={team.objectives.towers}
                                 tone="border-sky-400/20 bg-sky-500/10 text-sky-100"
                               />
                               <ObjectivePill
-                                label="Smoki"
+                                label="Dragons"
                                 value={team.objectives.dragons}
                                 tone="border-violet-400/20 bg-violet-500/10 text-violet-100"
                               />
                               <ObjectivePill
-                                label="Barony"
+                                label="Barons"
                                 value={team.objectives.barons}
                                 tone="border-amber-400/20 bg-amber-500/10 text-amber-100"
                               />
                               <ObjectivePill
-                                label="Larwy"
+                                label="Grubs"
                                 value={team.objectives.grubs}
                                 tone="border-teal-400/20 bg-teal-500/10 text-teal-100"
                               />
@@ -847,13 +1322,13 @@ export default function LeagueDashboard() {
                                   const clickable = Boolean(enemyHref);
                                   const content = (
                                     <>
-                                      <img
-                                        src={participant.championIconUrl}
-                                        alt=""
-                                        className="size-9 rounded-lg border border-white/10 object-cover"
-                                        loading="lazy"
-                                      />
-                                      <div className="min-w-0">
+                                  <img
+                                    src={participant.championIconUrl}
+                                    alt=""
+                                    className="size-9 rounded-lg border border-white/10 object-cover"
+                                    loading="lazy"
+                                  />
+                                  <div className="min-w-0">
                                         <div className="flex items-center gap-2">
                                           <p className="truncate text-xs font-medium text-zinc-100">
                                             {participant.riotId}
@@ -864,6 +1339,9 @@ export default function LeagueDashboard() {
                                         </div>
                                         <p className="text-[11px] text-zinc-500">
                                           {participant.championName} · {participant.position}
+                                        </p>
+                                        <p className="text-[11px] text-zinc-400">
+                                          {formatRank(participantRanks[participant.puuid])}
                                         </p>
                                       </div>
                                       <div className="text-right text-[11px] text-zinc-400">
@@ -933,10 +1411,10 @@ export default function LeagueDashboard() {
                     className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-zinc-300 transition-colors hover:bg-white/10 hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <RefreshCw className={`size-3.5 ${loadingMore ? "animate-spin" : ""}`} />
-                    {loadingMore ? "Pobieram..." : "Pokaż kolejne"}
+                    {loadingMore ? "Loading..." : "Show more"}
                   </button>
                 ) : (
-                  <p className="text-xs text-zinc-600">To już wszystkie pobrane mecze.</p>
+                  <p className="text-xs text-zinc-600">All loaded matches are already visible.</p>
                 )}
               </div>
             </div>
@@ -947,29 +1425,29 @@ export default function LeagueDashboard() {
           <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">
             <div className="mb-5 flex items-center gap-2">
               <Flame className="size-5 text-orange-300" />
-              <h2 className="text-lg font-semibold text-zinc-100">Szybki scouting</h2>
+              <h2 className="text-lg font-semibold text-zinc-100">Quick scouting</h2>
             </div>
             <div className="space-y-4">
               <div>
-                <p className="text-xs uppercase tracking-wider text-zinc-500">Najczęstszy pick</p>
+                <p className="text-xs uppercase tracking-wider text-zinc-500">Most played pick</p>
                 <p className="mt-1 text-xl font-semibold text-zinc-100">
-                  {activeSummary?.favoriteChampion ?? "Brak danych"}
+                  {activeSummary?.favoriteChampion ?? "No data"}
                 </p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wider text-zinc-500">Główna pozycja</p>
+                <p className="text-xs uppercase tracking-wider text-zinc-500">Primary role</p>
                 <p className="mt-1 text-xl font-semibold text-zinc-100">
-                  {activeSummary?.mainPosition ?? "Brak danych"}
+                  {activeSummary?.mainPosition ?? "No data"}
                 </p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wider text-zinc-500">Śr. obrażenia</p>
+                <p className="text-xs uppercase tracking-wider text-zinc-500">Avg damage</p>
                 <p className="mt-1 text-xl font-semibold text-zinc-100">
                   {formatNumber(activeSummary?.avgDamage ?? 0)}
                 </p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wider text-zinc-500">Śr. vision score</p>
+                <p className="text-xs uppercase tracking-wider text-zinc-500">Avg vision score</p>
                 <p className="mt-1 text-xl font-semibold text-zinc-100">
                   {(activeSummary?.avgVision ?? 0).toFixed(1)}
                 </p>
@@ -981,7 +1459,7 @@ export default function LeagueDashboard() {
             <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">
               <div className="mb-5 flex items-center gap-2">
                 <Activity className="size-5 text-emerald-300" />
-                <h2 className="text-lg font-semibold text-zinc-100">Najlepszy mecz</h2>
+                <h2 className="text-lg font-semibold text-zinc-100">Best game</h2>
               </div>
               <p className="text-2xl font-semibold text-zinc-100">{bestMatch.championName}</p>
               <p className="mt-2 text-sm text-zinc-500">

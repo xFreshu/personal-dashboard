@@ -37,6 +37,10 @@ type RankedQueue = {
   winRate: number;
 };
 
+type RankedLookupResult =
+  | { ok: true; entries: RiotLeagueEntry[] }
+  | { ok: false; error: string };
+
 type LiveGameStatus =
   | {
       status: "active";
@@ -69,15 +73,67 @@ function normalizeQueue(entry: RiotLeagueEntry): RankedQueue {
   };
 }
 
+async function fetchRankEntriesByPuuid(platform: string, puuid: string, apiKey: string): Promise<RankedLookupResult> {
+  const response = await fetch(
+    `https://${platform.toLowerCase()}.api.riotgames.com/lol/league/v4/entries/by-puuid/${encodeURIComponent(
+      puuid,
+    )}`,
+    {
+      headers: createRiotHeaders(apiKey),
+      cache: "no-store",
+    },
+  );
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      error: `Ranked lookup failed (${response.status}).`,
+    };
+  }
+
+  return {
+    ok: true,
+    entries: (await response.json()) as RiotLeagueEntry[],
+  };
+}
+
+async function fetchRankEntriesBySummonerId(
+  platform: string,
+  summonerId: string,
+  apiKey: string,
+): Promise<RankedLookupResult> {
+  const response = await fetch(
+    `https://${platform.toLowerCase()}.api.riotgames.com/lol/league/v4/entries/by-summoner/${encodeURIComponent(
+      summonerId,
+    )}`,
+    {
+      headers: createRiotHeaders(apiKey),
+      cache: "no-store",
+    },
+  );
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      error: `Ranked lookup failed (${response.status}).`,
+    };
+  }
+
+  return {
+    ok: true,
+    entries: (await response.json()) as RiotLeagueEntry[],
+  };
+}
+
 async function fetchLiveGame(
   accountConfig: LolAccountConfig,
-  puuid: string,
+  summonerId: string,
   apiKey: string,
 ): Promise<LiveGameStatus> {
   try {
     const liveGameResponse = await fetch(
       `https://${accountConfig.platform.toLowerCase()}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${encodeURIComponent(
-        puuid,
+        summonerId,
       )}`,
       {
         headers: createRiotHeaders(apiKey),
@@ -185,35 +241,33 @@ async function fetchRankForAccount(accountConfig: LolAccountConfig, apiKey: stri
     profileIconId: number;
   };
 
-  const leagueResponse = await fetch(
-    `https://${accountConfig.platform.toLowerCase()}.api.riotgames.com/lol/league/v4/entries/by-puuid/${riotAccount.puuid}`,
-    {
-      headers: createRiotHeaders(apiKey),
-      cache: "no-store",
-    },
-  );
+  const rankLookupByPuuid = await fetchRankEntriesByPuuid(accountConfig.platform, riotAccount.puuid, apiKey);
+  const rankLookup =
+    rankLookupByPuuid.ok
+      ? rankLookupByPuuid
+      : await fetchRankEntriesBySummonerId(accountConfig.platform, summoner.id, apiKey);
 
-  if (!leagueResponse.ok) {
+  if (!rankLookup.ok) {
     return {
       profile: {
         ...accountConfig,
         summonerLevel: summoner.summonerLevel,
         profileIconId: summoner.profileIconId,
       },
-      error: `Ranked lookup failed (${leagueResponse.status}).`,
+      error: rankLookup.error,
       primaryQueue: null,
       soloQueue: null,
       flexQueue: null,
-      liveGame: { status: "unknown", error: `Ranked lookup failed (${leagueResponse.status}).` },
+      liveGame: { status: "unknown", error: rankLookup.error },
       links: dpmLinks,
     };
   }
 
-  const entries = (await leagueResponse.json()) as RiotLeagueEntry[];
+  const entries = rankLookup.entries;
   const soloQueue = entries.find((entry) => entry.queueType === "RANKED_SOLO_5x5");
   const flexQueue = entries.find((entry) => entry.queueType === "RANKED_FLEX_SR");
   const primaryQueue = soloQueue ?? flexQueue ?? null;
-  const liveGame = await fetchLiveGame(accountConfig, riotAccount.puuid, apiKey);
+  const liveGame = await fetchLiveGame(accountConfig, summoner.id, apiKey);
 
   return {
     profile: {

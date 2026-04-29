@@ -209,11 +209,82 @@ describe("LeagueDashboard", () => {
   beforeEach(() => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({
-        json: async () => ({
-          configured: true,
-          accounts: [account],
-        }),
+      vi.fn((input: RequestInfo | URL) => {
+        const url = typeof input === "string" ? input : input.toString();
+
+        if (url.includes("/api/lol/player-ranks")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              configured: true,
+              ranks: {
+                "puuid-1": {
+                  queueType: "RANKED_SOLO_5x5",
+                  tier: "GOLD",
+                  rank: "II",
+                  leaguePoints: 34,
+                },
+                "puuid-2": {
+                  queueType: "RANKED_FLEX_SR",
+                  tier: "SILVER",
+                  rank: "I",
+                  leaguePoints: 12,
+                },
+              },
+            }),
+          });
+        }
+
+        if (url.includes("/api/lol/live-game")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              configured: true,
+              status: "inactive",
+            }),
+          });
+        }
+
+        if (url.includes("/api/lol/rank")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              configured: true,
+              accounts: [
+                {
+                  profile: {
+                    gameName: "TestPlayer",
+                    tagLine: "EUW",
+                    platform: "EUW1",
+                  },
+                  error: null,
+                  primaryQueue: {
+                    queueType: "RANKED_SOLO_5x5",
+                    tier: "DIAMOND",
+                    rank: "IV",
+                    leaguePoints: 22,
+                    wins: 10,
+                    losses: 8,
+                    winRate: 56,
+                  },
+                  soloQueue: null,
+                  flexQueue: null,
+                  liveGame: {
+                    status: "inactive",
+                  },
+                },
+              ],
+            }),
+          });
+        }
+
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            configured: true,
+            accounts: [account],
+          }),
+        });
       }),
     );
   });
@@ -230,9 +301,10 @@ describe("LeagueDashboard", () => {
     expect(await screen.findByRole("heading", { name: "TestPlayer#EUW" })).toBeInTheDocument();
     expect(screen.getByText("1W-1L")).toBeInTheDocument();
     expect(screen.getByText("50%")).toBeInTheDocument();
+    expect(screen.getAllByText("DIAMOND IV · 22 LP").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Ahri").length).toBeGreaterThan(0);
     expect(screen.getByText("Lux")).toBeInTheDocument();
-    expect(screen.getByText("Najlepszy mecz")).toBeInTheDocument();
+    expect(screen.getByText("Best game")).toBeInTheDocument();
     expect(container.querySelector("img")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /OP.GG/i })).toHaveAttribute(
       "href",
@@ -248,59 +320,89 @@ describe("LeagueDashboard", () => {
 
     await user.click(screen.getByRole("button", { name: /EUW1_1/i }));
 
-    expect(screen.getByText("Twoja drużyna")).toBeInTheDocument();
-    expect(screen.getByText("Rywal")).toBeInTheDocument();
+    expect(screen.getByText("Your Team")).toBeInTheDocument();
+    expect(screen.getByText("Enemy Team")).toBeInTheDocument();
     expect(screen.getAllByText("TestPlayer#EUW").length).toBeGreaterThan(0);
     expect(screen.getByText("KP")).toBeInTheDocument();
     expect(screen.getByText("75.0%")).toBeInTheDocument();
     expect(screen.getByText("Objective dmg")).toBeInTheDocument();
-    expect(screen.getByText("Matchup na linii")).toBeInTheDocument();
+    expect(screen.getByText("Lane matchup")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Zed/i })).toHaveAttribute(
       "href",
       "https://dpm.lol/EnemyMid-EUW",
     );
+    expect(await screen.findByText("GOLD II · 34 LP")).toBeInTheDocument();
   });
 
   it("loads the next match page from the load more control", async () => {
     const user = userEvent.setup();
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce({
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = typeof input === "string" ? input : input.toString();
+
+      if (url.includes("/api/lol/rank")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            configured: true,
+            accounts: [
+              {
+                profile: account.profile,
+                error: null,
+                primaryQueue: null,
+                soloQueue: null,
+                flexQueue: null,
+                liveGame: {
+                  status: "inactive",
+                },
+              },
+            ],
+          }),
+        });
+      }
+
+      if (url.includes("start=2&count=8&account=0")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            configured: true,
+            accounts: [
+              {
+                ...account,
+                accountIndex: 0,
+                summary: {
+                  ...account.summary,
+                  games: 1,
+                  wins: 1,
+                  losses: 0,
+                },
+                pagination: {
+                  start: 2,
+                  count: 8,
+                  nextStart: 3,
+                  hasMore: false,
+                },
+                matches: [
+                  {
+                    ...account.matches[0],
+                    matchId: "EUW1_3",
+                    championName: "Diana",
+                    championIconUrl: "https://ddragon.leagueoflegends.com/cdn/img/champion/tiles/Diana_0.jpg",
+                  },
+                ],
+              },
+            ],
+          }),
+        });
+      }
+
+      return Promise.resolve({
+        ok: true,
         json: async () => ({
           configured: true,
           accounts: [account],
         }),
-      })
-      .mockResolvedValueOnce({
-        json: async () => ({
-          configured: true,
-          accounts: [
-            {
-              ...account,
-              accountIndex: 0,
-              summary: {
-                ...account.summary,
-                games: 1,
-                wins: 1,
-                losses: 0,
-              },
-              pagination: {
-                start: 2,
-                count: 8,
-                nextStart: 3,
-                hasMore: false,
-              },
-              matches: [
-                {
-                  ...account.matches[0],
-                  matchId: "EUW1_3",
-                  championName: "Diana",
-                  championIconUrl: "https://ddragon.leagueoflegends.com/cdn/img/champion/tiles/Diana_0.jpg",
-                },
-              ],
-            },
-          ],
-        }),
       });
+    });
 
     vi.stubGlobal("fetch", fetchMock);
 
@@ -308,7 +410,7 @@ describe("LeagueDashboard", () => {
 
     expect(await screen.findByRole("heading", { name: "TestPlayer#EUW" })).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /Pokaż kolejne/i }));
+    await user.click(screen.getByRole("button", { name: /Show more/i }));
 
     expect(await screen.findByText("Diana")).toBeInTheDocument();
     expect(fetchMock).toHaveBeenLastCalledWith(
@@ -321,26 +423,66 @@ describe("LeagueDashboard", () => {
     const user = userEvent.setup();
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({
-        json: async () => ({
-          configured: true,
-          accounts: [
-            account,
-            {
-              ...account,
-              profile: {
-                gameName: "Second",
-                tagLine: "EUW",
-                platform: "EUW1",
+      vi.fn((input: RequestInfo | URL) => {
+        const url = typeof input === "string" ? input : input.toString();
+
+        if (url.includes("/api/lol/rank")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              configured: true,
+              accounts: [
+                {
+                  profile: account.profile,
+                  error: null,
+                  primaryQueue: null,
+                  soloQueue: null,
+                  flexQueue: null,
+                  liveGame: {
+                    status: "inactive",
+                  },
+                },
+                {
+                  profile: {
+                    gameName: "Second",
+                    tagLine: "EUW",
+                    platform: "EUW1",
+                  },
+                  error: null,
+                  primaryQueue: null,
+                  soloQueue: null,
+                  flexQueue: null,
+                  liveGame: {
+                    status: "inactive",
+                  },
+                },
+              ],
+            }),
+          });
+        }
+
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            configured: true,
+            accounts: [
+              account,
+              {
+                ...account,
+                profile: {
+                  gameName: "Second",
+                  tagLine: "EUW",
+                  platform: "EUW1",
+                },
+                summary: {
+                  ...account.summary,
+                  favoriteChampion: "Diana",
+                },
+                matches: [],
               },
-              summary: {
-                ...account.summary,
-                favoriteChampion: "Diana",
-              },
-              matches: [],
-            },
-          ],
-        }),
+            ],
+          }),
+        });
       }),
     );
 
@@ -348,11 +490,11 @@ describe("LeagueDashboard", () => {
 
     expect(await screen.findByRole("heading", { name: "TestPlayer#EUW" })).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Second#EUW" }));
+    await user.click(screen.getByRole("button", { name: /Second#EUW/i }));
 
     expect(screen.getByRole("heading", { name: "Second#EUW" })).toBeInTheDocument();
     expect(screen.getByText("Diana")).toBeInTheDocument();
-    expect(screen.getByText("Brak meczów do pokazania.")).toBeInTheDocument();
+    expect(screen.getByText("No matches to display.")).toBeInTheDocument();
   });
 
   it("shows missing configuration details", async () => {
@@ -368,7 +510,7 @@ describe("LeagueDashboard", () => {
 
     render(<LeagueDashboard />);
 
-    expect(await screen.findByText("Brak konfiguracji Riot")).toBeInTheDocument();
+    expect(await screen.findByText("Riot configuration missing")).toBeInTheDocument();
     expect(screen.getByText(/RIOT_API_KEY, LOL_ACCOUNTS/)).toBeInTheDocument();
   });
 
@@ -398,11 +540,11 @@ describe("LeagueDashboard", () => {
 
     render(<LeagueDashboard />);
 
-    expect(await screen.findByText("Nie udało się pobrać świeżej historii.")).toBeInTheDocument();
+    expect(await screen.findByText("Could not fetch fresh match history.")).toBeInTheDocument();
     expect(
       screen.getByText("Riot rate limit przy pobieraniu szczegółów meczu (429)."),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Odśwież/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Refresh/i })).toBeInTheDocument();
   });
 
   it("renders empty fallback when fetching fails", async () => {
@@ -411,7 +553,177 @@ describe("LeagueDashboard", () => {
     render(<LeagueDashboard />);
 
     await waitFor(() => {
-      expect(screen.getByText("Brak kont League do wyświetlenia.")).toBeInTheDocument();
+      expect(screen.getByText("No League accounts available.")).toBeInTheDocument();
     });
+  });
+
+  it("renders live scouting when the active account is in game", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL) => {
+        const url = typeof input === "string" ? input : input.toString();
+
+        if (url.includes("/api/lol/live-game")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              configured: true,
+              status: "active",
+              gameId: 123,
+              gameMode: "CLASSIC",
+              gameType: "MATCHED_GAME",
+              gameStartTime: Date.now() - 180_000,
+              queueId: 420,
+              queueName: "Solo Queue",
+              participantCount: 10,
+              links: {
+                overview: "https://dpm.lol/TestPlayer-EUW",
+                champions: "https://dpm.lol/TestPlayer-EUW/champions",
+                live: "https://dpm.lol/TestPlayer-EUW/live",
+              },
+              teams: [
+                {
+                  teamId: 100,
+                  label: "Your Team",
+                  analysis: {
+                    highestRank: "DIAMOND IV · 22 LP",
+                    knownRanks: 4,
+                    unrankedCount: 1,
+                    frontlineCount: 2,
+                    backlineCount: 3,
+                    composition: ["2x Mage", "2x Fighter"],
+                  },
+                  participants: [
+                    {
+                      summonerId: "summoner-1",
+                      summonerName: "TestPlayer",
+                      championId: 103,
+                      championName: "Ahri",
+                      championIconUrl:
+                        "https://ddragon.leagueoflegends.com/cdn/15.8.1/img/champion/Ahri.png",
+                      championTags: ["Mage", "Assassin"],
+                      spell1Id: 4,
+                      spell2Id: 14,
+                      teamId: 100,
+                      bot: false,
+                      isCurrentPlayer: true,
+                      rank: {
+                        queueType: "RANKED_SOLO_5x5",
+                        tier: "DIAMOND",
+                        rank: "IV",
+                        leaguePoints: 22,
+                      },
+                      rankLabel: "DIAMOND IV · 22 LP",
+                      rankScore: 2422,
+                    },
+                  ],
+                },
+                {
+                  teamId: 200,
+                  label: "Enemy Team",
+                  analysis: {
+                    highestRank: "EMERALD II · 44 LP",
+                    knownRanks: 5,
+                    unrankedCount: 0,
+                    frontlineCount: 1,
+                    backlineCount: 4,
+                    composition: ["3x Mage"],
+                  },
+                  participants: [
+                    {
+                      summonerId: "summoner-2",
+                      summonerName: "EnemyMid",
+                      championId: 238,
+                      championName: "Zed",
+                      championIconUrl:
+                        "https://ddragon.leagueoflegends.com/cdn/15.8.1/img/champion/Zed.png",
+                      championTags: ["Assassin"],
+                      spell1Id: 4,
+                      spell2Id: 12,
+                      teamId: 200,
+                      bot: false,
+                      isCurrentPlayer: false,
+                      rank: {
+                        queueType: "RANKED_SOLO_5x5",
+                        tier: "EMERALD",
+                        rank: "II",
+                        leaguePoints: 44,
+                      },
+                      rankLabel: "EMERALD II · 44 LP",
+                      rankScore: 2244,
+                    },
+                  ],
+                },
+              ],
+            }),
+          });
+        }
+
+        if (url.includes("/api/lol/rank")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              configured: true,
+              accounts: [
+                {
+                  profile: account.profile,
+                  error: null,
+                  primaryQueue: {
+                    queueType: "RANKED_SOLO_5x5",
+                    tier: "DIAMOND",
+                    rank: "IV",
+                    leaguePoints: 22,
+                    wins: 10,
+                    losses: 8,
+                    winRate: 56,
+                  },
+                  soloQueue: null,
+                  flexQueue: null,
+                  liveGame: {
+                    status: "active",
+                    gameId: 123,
+                    gameMode: "CLASSIC",
+                    gameType: "MATCHED_GAME",
+                    gameStartTime: Date.now() - 180_000,
+                    queueId: 420,
+                    participantCount: 10,
+                  },
+                },
+              ],
+            }),
+          });
+        }
+
+        if (url.includes("/api/lol/player-ranks")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              configured: true,
+              ranks: {},
+            }),
+          });
+        }
+
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            configured: true,
+            accounts: [account],
+          }),
+        });
+      }),
+    );
+
+    render(<LeagueDashboard />);
+
+    expect(await screen.findByText("Live scouting")).toBeInTheDocument();
+    expect(screen.getByText("In game right now")).toBeInTheDocument();
+    expect(await screen.findByText("Your Team")).toBeInTheDocument();
+    expect(screen.getByText("Enemy Team")).toBeInTheDocument();
+    expect(screen.getByText("Highest rank: DIAMOND IV · 22 LP")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Open Live DPM/i })).toHaveAttribute(
+      "href",
+      "https://dpm.lol/TestPlayer-EUW/live",
+    );
   });
 });

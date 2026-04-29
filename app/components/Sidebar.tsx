@@ -24,7 +24,7 @@ export default function Sidebar() {
       icon: LayoutDashboard,
     },
     {
-      name: "Nauka",
+      name: "Learning",
       href: "/learning",
       icon: GraduationCap,
     },
@@ -50,7 +50,7 @@ export default function Sidebar() {
       {isExpanded && (
         <button
           type="button"
-          aria-label="Zamknij sidebar"
+          aria-label="Close sidebar"
           className="fixed inset-0 z-20 bg-black/45 backdrop-blur-sm md:hidden"
           onClick={() => setIsExpanded(false)}
         />
@@ -90,7 +90,7 @@ export default function Sidebar() {
           <button
             type="button"
             onClick={() => setIsExpanded((value) => !value)}
-            aria-label={isExpanded ? "Zwiń sidebar" : "Rozwiń sidebar"}
+            aria-label={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
             className="flex size-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-zinc-300 transition-colors hover:bg-white/10 hover:text-zinc-100"
           >
             {isExpanded ? (

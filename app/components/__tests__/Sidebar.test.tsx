@@ -38,13 +38,13 @@ describe("Sidebar", () => {
     const aside = container.querySelector("aside");
     expect(aside).toHaveClass("w-20");
     expect(screen.queryByText("Dashboard")).not.toBeInTheDocument();
-    expect(screen.queryByText("Nauka")).not.toBeInTheDocument();
+    expect(screen.queryByText("Learning")).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /Rozwiń sidebar/i }));
+    await user.click(screen.getByRole("button", { name: /Expand sidebar/i }));
 
     expect(aside).toHaveClass("w-72");
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
-    expect(screen.getByText("Nauka")).toBeInTheDocument();
+    expect(screen.getByText("Learning")).toBeInTheDocument();
     expect(screen.getByText("League")).toBeInTheDocument();
   });
 
@@ -57,13 +57,13 @@ describe("Sidebar", () => {
     });
     const { container } = render(<Sidebar />);
 
-    await user.click(screen.getByRole("button", { name: /Rozwiń sidebar/i }));
+    await user.click(screen.getByRole("button", { name: /Expand sidebar/i }));
     expect(container.querySelector("aside")).toHaveClass("w-72");
 
-    await user.click(screen.getByRole("button", { name: /Zamknij sidebar/i }));
+    await user.click(screen.getByRole("button", { name: /Close sidebar/i }));
     expect(container.querySelector("aside")).toHaveClass("w-20");
 
-    await user.click(screen.getByRole("button", { name: /Rozwiń sidebar/i }));
+    await user.click(screen.getByRole("button", { name: /Expand sidebar/i }));
     await user.click(screen.getByRole("link", { name: /Dashboard/i }));
     expect(container.querySelector("aside")).toHaveClass("w-20");
   });
