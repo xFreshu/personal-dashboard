@@ -3,6 +3,21 @@
 Ten plik przechowuje wazne decyzje projektowe. Nowe wpisy dodawaj od gory albo
 chronologicznie w ramach sekcji, zachowujac krotkie uzasadnienie i konsekwencje.
 
+## 2026-05-06: Atlas gorski pokazuje popularne polskie cele zamiast pelnego OSM
+
+**Decyzja:** Widok `/mountains` korzysta z kuratorowanego katalogu TypeScript:
+pelna Korona Gór Polski plus popularne polskie szczyty i klasyczne trasy.
+Odwiedzone elementy sa zapisywane w `localStorage`.
+
+**Dlaczego:** Pelny snapshot OpenStreetMap zawieral kilkanascie tysiecy
+szczytow i tysiące relacji szlakowych, co bylo zbyt ciezkie do codziennego,
+osobistego odhaczania. Katalog popularnych celow daje mniej szumu i lepsza
+uzytecznosc.
+
+**Konsekwencje:** Katalog nie jest pelnym rejestrem wszystkich punktow w Polsce.
+Nowe popularne cele dodajemy recznie do `mountainCatalog.ts`. Synchronizacja
+miedzy urzadzeniami bedzie wymagac modeli Prisma dla odwiedzin.
+
 ## 2026-04-28: Dokumentacja agents/docs jako zrodlo wiedzy
 
 **Decyzja:** Dodajemy `AGENTS.md` oraz folder `docs/` z opisem produktu,

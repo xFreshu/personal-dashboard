@@ -29,6 +29,8 @@ Obecne MVP sklada sie z:
 - strony `/league` z historia meczow LoL, forma kont i linkami do zewnetrznych
   profili,
 - strony `/learning` z tablica roadmap nauki,
+- strony `/mountains` z atlasem popularnych polskich szczytow i tras do
+  odhaczania,
 - strony `/github` z widgetem GitHub,
 - strony `/codex` ze statusem konta i zuzyciem tokenow Codexa,
 - sidebaru jako glownej nawigacji,

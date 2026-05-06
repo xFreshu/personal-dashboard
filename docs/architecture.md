@@ -20,6 +20,7 @@ Glowny layout korzysta z sidebara i stron:
 
 - `/` - dashboard dzienny,
 - `/learning` - roadmapy nauki,
+- `/mountains` - atlas pasm, szczytow i tras w Polsce,
 - `/github` - aktywnosc GitHub,
 - `/codex` - status Codexa i tokeny.
 
@@ -75,6 +76,19 @@ albo wyniesione dopiero wtedy, gdy sa realnie wspoldzielone.
 - `GET /api/codex/tokens` czyta lokalna baze stanu Codexa oraz status przez
   `codex app-server`.
 - Route handler wymaga runtime Node.js, bo korzysta z procesow systemowych.
+
+### Gory i szlaki
+
+- Widok `/mountains` korzysta z kuratorowanego katalogu w
+  `app/components/mountainCatalog.ts`.
+- Katalog obejmuje pelna Korone Gór Polski oraz popularne polskie szczyty i
+  klasyczne trasy w najwazniejszych pasmach.
+- Nie ladujemy pelnego snapshotu OSM w UI, bo kilkanascie tysiecy punktow bylo
+  zbyt ciezkie do codziennego odhaczania.
+- Postep odwiedzin jest zapisywany w `localStorage` pod kluczem
+  `mountain-progress-v1`, podobnie do lokalnego postepu roadmap nauki.
+- Jesli funkcja ma zostac zsynchronizowana miedzy urzadzeniami, kolejnym krokiem
+  sa modele Prisma dla odwiedzin.
 
 ## Baza danych
 

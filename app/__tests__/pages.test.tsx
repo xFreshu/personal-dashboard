@@ -6,6 +6,7 @@ import GitHubPage from "../github/page";
 import LeaguePage from "../league/page";
 import LearningPage from "../learning/page";
 import RootLayout, { metadata } from "../layout";
+import MountainsPage from "../mountains/page";
 import Home from "../page";
 
 vi.mock("next/font/google", () => ({
@@ -63,6 +64,10 @@ vi.mock("../components/LearningRoadmapBoard", () => ({
   default: () => <div>Learning roadmap board</div>,
 }));
 
+vi.mock("../components/MountainExplorer", () => ({
+  default: () => <div>Mountain explorer</div>,
+}));
+
 describe("app pages and layout", () => {
   it("renders the main dashboard without Codex tokens", () => {
     render(<Home />);
@@ -89,6 +94,9 @@ describe("app pages and layout", () => {
 
     rerender(<LearningPage />);
     expect(screen.getByText("Learning roadmap board")).toBeInTheDocument();
+
+    rerender(<MountainsPage />);
+    expect(screen.getByText("Mountain explorer")).toBeInTheDocument();
 
     rerender(<LeaguePage />);
     expect(screen.getByText("League dashboard")).toBeInTheDocument();

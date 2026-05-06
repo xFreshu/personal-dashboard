@@ -11,6 +11,7 @@ import {
   Gamepad2,
   GraduationCap,
   LayoutDashboard,
+  Mountain,
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -27,6 +28,11 @@ export default function Sidebar() {
       name: "Learning",
       href: "/learning",
       icon: GraduationCap,
+    },
+    {
+      name: "Góry",
+      href: "/mountains",
+      icon: Mountain,
     },
     {
       name: "League",
