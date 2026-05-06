@@ -279,7 +279,7 @@ function createCodexProcess(options: CodexProcessOptions = {}) {
   const stdout = new EventEmitter();
   const child = new EventEmitter() as EventEmitter & {
     stdout: EventEmitter;
-    stdin: { write: ReturnType<typeof vi.fn> };
+    stdin: { write: (line: string) => boolean };
     kill: ReturnType<typeof vi.fn>;
   };
 

@@ -51,8 +51,21 @@ export const mountainRegions: MountainRegion[] = [
         peaks: [
           { id: "rysy", name: "Rysy", elevation: 2499, crown: true, note: "najwyzszy punkt Polski" },
           { id: "kozi-wierch", name: "Kozi Wierch", elevation: 2291, crown: false, note: "najwyzszy w calosci w Polsce" },
+          { id: "swinica", name: "Swinica", elevation: 2301, crown: false, note: "wysoki klasyk nad Kasprowym" },
+          { id: "zadni-granat", name: "Zadni Granat", elevation: 2240, crown: false, note: "Orla Perc i Dolina Gasienicowa" },
+          { id: "szpiglasowy-wierch", name: "Szpiglasowy Wierch", elevation: 2172, crown: false, note: "widoki nad Dolina Pieciu Stawow" },
+          { id: "starorobocianski-wierch", name: "Starorobocianski Wierch", elevation: 2176, crown: false, note: "najwyzszy szczyt polskich Tatr Zachodnich" },
+          { id: "wolowiec", name: "Wolowiec", elevation: 2064, crown: false, note: "graniczny klasyk z Doliny Chocholowskiej" },
+          { id: "krzesanica", name: "Krzesanica", elevation: 2122, crown: false, note: "najwyzszy z Czerwonych Wierchow" },
+          { id: "ciemniak", name: "Ciemniak", elevation: 2096, crown: false, note: "zachodni wierzcholek Czerwonych Wierchow" },
+          { id: "malolaczniak", name: "Malolaczniak", elevation: 2096, crown: false, note: "Czerwone Wierchy nad Dolina Malolacka" },
+          { id: "kopa-kondracka", name: "Kopa Kondracka", elevation: 2005, crown: false, note: "najlatwiejszy dwutysiecznik na grani" },
+          { id: "koscielec", name: "Koscielec", elevation: 2155, crown: false, note: "skalna piramida nad Czarnym Stawem Gasienicowym" },
           { id: "kasprowy-wierch", name: "Kasprowy Wierch", elevation: 1987, crown: false, note: "klasyk z Kuźnic" },
+          { id: "ornak", name: "Ornak", elevation: 1854, crown: false, note: "dlugi grzbiet nad Dolina Koscieliska" },
           { id: "giewont", name: "Giewont", elevation: 1894, crown: false, note: "symbol Zakopanego" },
+          { id: "sarnia-skala", name: "Sarnia Skala", elevation: 1377, crown: false, note: "szybki punkt widokowy nad Zakopanem" },
+          { id: "nosal", name: "Nosal", elevation: 1206, crown: false, note: "krotki tatrzanski klasyk z Kuznic" },
         ],
         routes: [
           {
@@ -112,7 +125,15 @@ export const mountainRegions: MountainRegion[] = [
         peaks: [
           { id: "skrzyczne", name: "Skrzyczne", elevation: 1257, crown: true, note: "najwyzszy szczyt pasma" },
           { id: "barania-gora", name: "Barania Gora", elevation: 1220, crown: false, note: "zrodla Wisly" },
+          { id: "malinowska-skala", name: "Malinowska Skala", elevation: 1152, crown: false, note: "charakterystyczna wychodnia skalna" },
+          { id: "klimczok", name: "Klimczok", elevation: 1117, crown: false, note: "popularny cel z Bielska-Bialej i Szczyrku" },
+          { id: "szyndzielnia", name: "Szyndzielnia", elevation: 1028, crown: false, note: "schronisko i kolej gondolowa" },
+          { id: "magura-slaska", name: "Magura", elevation: 1109, crown: false, note: "grzbiet nad Klimczokiem" },
           { id: "czantoria-wielka", name: "Czantoria Wielka", elevation: 995, crown: false, note: "grzbiet nad Ustroniem" },
+          { id: "stozek-wielki", name: "Stozek Wielki", elevation: 978, crown: false, note: "graniczny szczyt nad Wisla" },
+          { id: "rownica", name: "Rownica", elevation: 884, crown: false, note: "latwy klasyk nad Ustroniem" },
+          { id: "trzy-kopce-wislanskie", name: "Trzy Kopce Wislanskie", elevation: 810, crown: false, note: "widokowe przejscie miedzy Wisla i Brenna" },
+          { id: "grabowa-slaska", name: "Grabowa", elevation: 907, crown: false, note: "grzbiet beskidzki nad Brenna" },
         ],
         routes: [
           {
@@ -142,6 +163,14 @@ export const mountainRegions: MountainRegion[] = [
         peaks: [
           { id: "czupel", name: "Czupel", elevation: 933, crown: true, note: "Korona Gór Polski" },
           { id: "lamana-skala", name: "Lamana Skala", elevation: 929, crown: false, note: "Madohora" },
+          { id: "leskowiec", name: "Leskowiec", elevation: 922, crown: false, note: "klasyk nad Wadowicami" },
+          { id: "gron-jana-pawla-ii", name: "Gron Jana Pawla II", elevation: 890, crown: false, note: "schronisko pod Leskowcem" },
+          { id: "magurka-wilkowicka", name: "Magurka Wilkowicka", elevation: 909, crown: false, note: "popularna baza pod Czuplem" },
+          { id: "hrobacza-laka", name: "Hrobacza Laka", elevation: 828, crown: false, note: "widok na Bielsko-Biala i jeziora" },
+          { id: "zar", name: "Zar", elevation: 761, crown: false, note: "kolej, lotnisko i Jezioro Miedzybrodzkie" },
+          { id: "potrojna", name: "Potrojna", elevation: 884, crown: false, note: "widokowy grzbiet nad Rzykami" },
+          { id: "kocierz", name: "Kocierz", elevation: 879, crown: false, note: "przejscie w stronę Potrojnej" },
+          { id: "gibasowka", name: "Gibasowka", elevation: 842, crown: false, note: "spokojne polany Beskidu Malego" },
         ],
         routes: [
           {

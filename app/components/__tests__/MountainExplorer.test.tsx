@@ -17,7 +17,7 @@ describe("MountainExplorer", () => {
     expect(screen.getByRole("button", { name: /Karpaty/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Sudety/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Tatry" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Rysy 2499 m KGP/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Rysy.*2499 m.*KGP/i })).toBeInTheDocument();
     expect(screen.getByText("0/28")).toBeInTheDocument();
   });
 
@@ -30,7 +30,7 @@ describe("MountainExplorer", () => {
     await user.click(screen.getByRole("button", { name: /Bieszczady/i }));
 
     expect(screen.getByRole("heading", { name: "Bieszczady" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Tarnica 1346 m KGP/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Tarnica.*1346 m.*KGP/i })).toBeInTheDocument();
   });
 
   it("persists visited peaks in localStorage", async () => {
@@ -38,10 +38,10 @@ describe("MountainExplorer", () => {
 
     render(<MountainExplorer />);
 
-    await user.click(screen.getByRole("button", { name: /Rysy 2499 m KGP/i }));
+    await user.click(screen.getByRole("button", { name: /Rysy.*2499 m.*KGP/i }));
 
     await waitFor(() => {
-      expect(screen.getByText("1/52")).toBeInTheDocument();
+      expect(screen.getByText("1/81")).toBeInTheDocument();
       expect(screen.getByText("1/28")).toBeInTheDocument();
     });
 
@@ -60,7 +60,7 @@ describe("MountainExplorer", () => {
     await user.click(screen.getByRole("button", { name: "Zaznacz pasmo" }));
 
     await waitFor(() => {
-      expect(screen.getByText("4/52")).toBeInTheDocument();
+      expect(screen.getByText("17/81")).toBeInTheDocument();
       expect(screen.getByText("2/32")).toBeInTheDocument();
     });
 
